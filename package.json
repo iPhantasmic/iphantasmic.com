@@ -2,9 +2,9 @@
   "name": "nextjs-notion-starter-kit",
   "version": "2.0.0",
   "private": true,
-  "description": "The perfect starter kit for building beautiful websites with Next.js and Notion.",
-  "author": "Travis Fischer <travis@transitivebullsh.it>",
-  "repository": "transitive-bullshit/nextjs-notion-starter-kit",
+  "description": "Personal site for iPhantasmic",
+  "author": "iPhantasmic",
+  "repository": "iPhantasmic/iphantasmic.com",
   "license": "MIT",
   "engines": {
     "node": ">=16"

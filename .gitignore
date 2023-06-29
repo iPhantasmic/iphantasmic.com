@@ -3,3 +3,4 @@
 /.next/
 /.idea/
 /node_modules/
+.vercel
