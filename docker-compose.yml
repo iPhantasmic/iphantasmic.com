@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+  iphantasmic-com:
+    container_name: iphantasmic-com
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
