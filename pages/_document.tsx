@@ -1,10 +1,8 @@
-import * as React from 'react'
+import { IconContext } from '@react-icons/all-files'
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 
-import { IconContext } from '@react-icons/all-files'
-
 export default class MyDocument extends Document {
-  render() {
+  override render() {
     return (
       <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
         <Html lang='en'>
@@ -14,7 +12,7 @@ export default class MyDocument extends Document {
               rel='icon'
               type='image/png'
               sizes='32x32'
-              href='favicon.ico'
+              href='favicon.png'
             />
 
             <link rel='manifest' href='/manifest.json' />

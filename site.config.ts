@@ -17,7 +17,7 @@ export default siteConfig({
   description: 'iPhantasmic\'s Blog',
 
   // social usernames (optional)
-  twitter: null,
+  // twitter: '#',
   github: 'iPhantasmic',
   linkedin: 'justinlamxikai',
   // mastodon: '#', // optional mastodon profile URL, provides link verification
