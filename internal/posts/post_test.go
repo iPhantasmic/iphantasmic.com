@@ -33,6 +33,16 @@ draft: true
 
 This should not load.
 `)
+	writePost(t, dir, "whoami.md", `---
+title: "whoami.exe"
+slug: "whoami.exe"
+kind: "page"
+description: "Profile page."
+published: "2026-06-03"
+---
+
+Profile page.
+`)
 
 	store, err := LoadDir(dir)
 	if err != nil {
@@ -56,6 +66,12 @@ This should not load.
 	}
 	if _, ok := store.Find("draft"); ok {
 		t.Fatal("Find(draft) found a draft post")
+	}
+	if page, ok := store.Find("whoami.exe"); !ok || page.Kind != "page" {
+		t.Fatalf("Find(whoami.exe) = (%+v, %v), want page", page, ok)
+	}
+	if got := len(store.SitemapPages()); got != 2 {
+		t.Fatalf("len(SitemapPages()) = %d, want 2", got)
 	}
 }
 

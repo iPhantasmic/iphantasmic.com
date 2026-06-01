@@ -13,6 +13,8 @@ templ Layout(site config.Site, title string, year int) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<meta name="description" content={ site.Description }/>
 			<title>{ title }</title>
+			<link rel="icon" href="/favicon.ico"/>
+			<link rel="manifest" href="/static/manifest.json"/>
 			<link rel="stylesheet" href="/assets/css/app.css"/>
 			<script src="/assets/js/theme.js" defer></script>
 		</head>
@@ -21,6 +23,7 @@ templ Layout(site config.Site, title string, year int) {
 				<a class="brand" href="/">{ site.Name }</a>
 				<nav class="nav">
 					<a href="/">Posts</a>
+					<a href="/whoami.exe">whoami.exe</a>
 					<button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">Theme</button>
 				</nav>
 			</header>

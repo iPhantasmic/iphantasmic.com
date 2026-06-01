@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/xml"
 	"net/http"
+
+	"iphantasmic.com/internal/posts"
 )
 
 type sitemapURLSet struct {
@@ -25,9 +27,9 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request) {
 	urls := []sitemapURL{
 		{Loc: s.site.URL("/")},
 	}
-	for _, post := range s.posts.All() {
+	for _, post := range s.posts.SitemapPages() {
 		urls = append(urls, sitemapURL{
-			Loc:     s.site.URL("/posts/" + post.Slug),
+			Loc:     s.pageURL(post),
 			LastMod: post.Published.Format("2006-01-02"),
 		})
 	}
@@ -36,6 +38,13 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request) {
 		XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9",
 		URLs:  urls,
 	})
+}
+
+func (s *Server) pageURL(post posts.Post) string {
+	if post.Kind == "page" {
+		return s.site.URL("/" + post.Slug)
+	}
+	return s.site.URL("/posts/" + post.Slug)
 }
 
 func (s *Server) robots(w http.ResponseWriter, r *http.Request) {

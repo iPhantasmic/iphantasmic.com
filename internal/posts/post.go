@@ -23,6 +23,7 @@ type Post struct {
 	Title       string
 	Slug        string
 	Description string
+	Kind        string
 	Published   time.Time
 	Tags        []string
 	Body        template.HTML
@@ -30,6 +31,7 @@ type Post struct {
 
 type Store struct {
 	posts  []Post
+	pages  []Post
 	bySlug map[string]Post
 }
 
@@ -37,13 +39,14 @@ type frontMatter struct {
 	Title       string   `yaml:"title"`
 	Slug        string   `yaml:"slug"`
 	Description string   `yaml:"description"`
+	Kind        string   `yaml:"kind"`
 	Published   string   `yaml:"published"`
 	Tags        []string `yaml:"tags"`
 	Draft       bool     `yaml:"draft"`
 }
 
 var (
-	slugPattern      = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+	slugPattern      = regexp.MustCompile(`^[a-z0-9]+(?:[-.][a-z0-9]+)*$`)
 	markdownRenderer = goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
@@ -80,15 +83,23 @@ func LoadDir(dir string) (*Store, error) {
 	})
 
 	bySlug := make(map[string]Post, len(loaded))
+	posts := make([]Post, 0, len(loaded))
+	pages := make([]Post, 0)
 	for _, post := range loaded {
 		if _, exists := bySlug[post.Slug]; exists {
 			return nil, fmt.Errorf("duplicate post slug %q", post.Slug)
 		}
 		bySlug[post.Slug] = post
+		if post.Kind == "page" {
+			pages = append(pages, post)
+		} else {
+			posts = append(posts, post)
+		}
 	}
 
 	return &Store{
-		posts:  loaded,
+		posts:  posts,
+		pages:  pages,
 		bySlug: bySlug,
 	}, nil
 }
@@ -100,6 +111,13 @@ func (s *Store) All() []Post {
 func (s *Store) Find(slug string) (Post, bool) {
 	post, ok := s.bySlug[slug]
 	return post, ok
+}
+
+func (s *Store) SitemapPages() []Post {
+	items := make([]Post, 0, len(s.pages)+len(s.posts))
+	items = append(items, s.pages...)
+	items = append(items, s.posts...)
+	return items
 }
 
 func loadPost(path string) (Post, bool, error) {
@@ -139,6 +157,7 @@ func loadPost(path string) (Post, bool, error) {
 		Title:       strings.TrimSpace(meta.Title),
 		Slug:        strings.TrimSpace(meta.Slug),
 		Description: strings.TrimSpace(meta.Description),
+		Kind:        cleanKind(meta.Kind),
 		Published:   published,
 		Tags:        cleanTags(meta.Tags),
 		Body:        rendered,
@@ -167,13 +186,23 @@ func validateFrontMatter(path string, meta frontMatter) error {
 	case strings.TrimSpace(meta.Slug) == "":
 		return fmt.Errorf("%s: missing required frontmatter field slug", path)
 	case !slugPattern.MatchString(strings.TrimSpace(meta.Slug)):
-		return fmt.Errorf("%s: slug %q must be lowercase kebab-case", path, meta.Slug)
+		return fmt.Errorf("%s: slug %q must be lowercase kebab-case or dot-separated", path, meta.Slug)
 	case strings.TrimSpace(meta.Description) == "":
 		return fmt.Errorf("%s: missing required frontmatter field description", path)
 	case strings.TrimSpace(meta.Published) == "":
 		return fmt.Errorf("%s: missing required frontmatter field published", path)
+	case cleanKind(meta.Kind) != "post" && cleanKind(meta.Kind) != "page":
+		return fmt.Errorf("%s: kind must be post or page", path)
 	}
 	return nil
+}
+
+func cleanKind(kind string) string {
+	kind = strings.TrimSpace(kind)
+	if kind == "" {
+		return "post"
+	}
+	return kind
 }
 
 func cleanTags(tags []string) []string {
