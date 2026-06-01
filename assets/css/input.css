@@ -1,42 +1,7 @@
-/*! tailwindcss v4.3.0 | MIT License | https://tailwindcss.com */
-@layer properties;
-.absolute {
-  position: absolute;
-}
-.relative {
-  position: relative;
-}
-.static {
-  position: static;
-}
-.block {
-  display: block;
-}
-.contents {
-  display: contents;
-}
-.flex {
-  display: flex;
-}
-.hidden {
-  display: none;
-}
-.table {
-  display: table;
-}
-.transform {
-  transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
-}
-.border {
-  border-style: var(--tw-border-style);
-  border-width: 1px;
-}
-.lowercase {
-  text-transform: lowercase;
-}
-.filter {
-  filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @layer base {
   :root {
     color-scheme: light;
@@ -49,6 +14,7 @@
     --accent-2: #e5337e;
     --shadow: 0 18px 60px rgba(15, 15, 15, 0.08);
   }
+
   :root.dark {
     color-scheme: dark;
     --bg: #202428;
@@ -58,9 +24,11 @@
     --line: rgba(244, 241, 235, 0.13);
     --shadow: 0 18px 60px rgba(0, 0, 0, 0.24);
   }
+
   * {
     box-sizing: border-box;
   }
+
   body {
     margin: 0;
     background: var(--bg);
@@ -68,24 +36,32 @@
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     line-height: 1.65;
   }
+
   a {
     color: inherit;
     text-decoration: none;
   }
-  h1, h2, h3, p {
+
+  h1,
+  h2,
+  h3,
+  p {
     margin-top: 0;
   }
+
   h1 {
     margin-bottom: 14px;
     font-size: clamp(2.25rem, 7vw, 4.5rem);
     line-height: 1.05;
   }
+
   h2 {
     margin-bottom: 8px;
     font-size: 1.65rem;
     line-height: 1.2;
   }
 }
+
 @layer components {
   .site-header {
     position: sticky;
@@ -97,22 +73,22 @@
     max-width: 1100px;
     margin: 0 auto;
     padding: 14px 24px;
-    background: var(--bg);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
-    }
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
     backdrop-filter: saturate(180%) blur(16px);
     border-bottom: 1px solid var(--line);
   }
+
   .brand {
     font-weight: 700;
   }
+
   .nav {
     display: flex;
     align-items: center;
     gap: 16px;
     color: var(--muted);
   }
+
   .theme-toggle {
     min-width: 64px;
     height: 36px;
@@ -123,23 +99,32 @@
     color: var(--text);
     cursor: pointer;
   }
+
   .page-shell {
     width: min(100%, 900px);
     margin: 0 auto;
     padding: 56px 24px;
   }
-  .hero, .post-header, .empty-state {
+
+  .hero,
+  .post-header,
+  .empty-state {
     text-align: center;
     margin: 0 auto 48px;
   }
-  .eyebrow, time, .back-link {
+
+  .eyebrow,
+  time,
+  .back-link {
     color: var(--muted);
     font-size: 0.9rem;
   }
+
   .post-list {
     display: grid;
     gap: 22px;
   }
+
   .post-card {
     display: flex;
     justify-content: space-between;
@@ -150,7 +135,9 @@
     border-radius: 16px;
     box-shadow: var(--shadow);
   }
-  .post-card h2 a, .prose a {
+
+  .post-card h2 a,
+  .prose a {
     background-image: linear-gradient(90.68deg, var(--accent) 0.26%, var(--accent-2) 102.37%);
     background-position: 0 100%;
     background-repeat: no-repeat;
@@ -158,10 +145,13 @@
     border-bottom: 0.1rem solid var(--line);
     transition: background-size 180ms ease-out, border-color 180ms ease-out;
   }
-  .post-card h2 a:hover, .prose a:hover {
+
+  .post-card h2 a:hover,
+  .prose a:hover {
     background-size: 100% 0.1rem;
     border-color: transparent;
   }
+
   .tags {
     display: flex;
     flex-wrap: wrap;
@@ -170,32 +160,37 @@
     margin: 14px 0 0;
     list-style: none;
   }
+
   .tags li {
     padding: 4px 10px;
     border-radius: 999px;
-    background: var(--accent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-    }
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
     color: var(--muted);
     font-size: 0.84rem;
   }
+
   .post {
     width: min(100%, 720px);
     margin: 0 auto;
   }
+
   .post-header h1 {
     margin-top: 12px;
   }
+
   .post-header .tags {
     justify-content: center;
   }
+
   .prose {
     font-size: 1.05rem;
   }
-  .prose h2, .prose h3 {
+
+  .prose h2,
+  .prose h3 {
     margin-top: 2.1em;
   }
+
   .prose blockquote {
     margin: 28px 0;
     padding: 4px 18px;
@@ -204,15 +199,14 @@
     font-size: 1.15rem;
     font-style: italic;
   }
+
   .prose code {
     padding: 0.18em 0.38em;
     border-radius: 6px;
-    background: var(--text);
-    @supports (color: color-mix(in lab, red, red)) {
-      background: color-mix(in srgb, var(--text) 9%, transparent);
-    }
+    background: color-mix(in srgb, var(--text) 9%, transparent);
     color: #e5337e;
   }
+
   .prose pre {
     overflow-x: auto;
     padding: 20px;
@@ -220,11 +214,13 @@
     border-radius: 10px;
     background: var(--surface);
   }
+
   .prose pre code {
     padding: 0;
     background: transparent;
     color: inherit;
   }
+
   .button-link {
     display: inline-flex;
     margin-top: 12px;
@@ -232,6 +228,7 @@
     border: 1px solid var(--line);
     border-radius: 999px;
   }
+
   .site-footer {
     display: flex;
     justify-content: center;
@@ -242,116 +239,17 @@
     color: var(--muted);
     font-size: 0.92rem;
   }
+
   @media (max-width: 680px) {
-    .site-header, .post-card, .site-footer {
+    .site-header,
+    .post-card,
+    .site-footer {
       flex-direction: column;
       align-items: flex-start;
     }
+
     .page-shell {
       padding-top: 36px;
-    }
-  }
-}
-@property --tw-rotate-x {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-rotate-y {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-rotate-z {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-skew-x {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-skew-y {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-border-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
-@property --tw-blur {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-brightness {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-contrast {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-grayscale {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-hue-rotate {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-invert {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-opacity {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-saturate {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-sepia {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-drop-shadow {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-drop-shadow-color {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-drop-shadow-alpha {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 100%;
-}
-@property --tw-drop-shadow-size {
-  syntax: "*";
-  inherits: false;
-}
-@layer properties {
-  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
-    *, ::before, ::after, ::backdrop {
-      --tw-rotate-x: initial;
-      --tw-rotate-y: initial;
-      --tw-rotate-z: initial;
-      --tw-skew-x: initial;
-      --tw-skew-y: initial;
-      --tw-border-style: solid;
-      --tw-blur: initial;
-      --tw-brightness: initial;
-      --tw-contrast: initial;
-      --tw-grayscale: initial;
-      --tw-hue-rotate: initial;
-      --tw-invert: initial;
-      --tw-opacity: initial;
-      --tw-saturate: initial;
-      --tw-sepia: initial;
-      --tw-drop-shadow: initial;
-      --tw-drop-shadow-color: initial;
-      --tw-drop-shadow-alpha: 100%;
-      --tw-drop-shadow-size: initial;
     }
   }
 }
