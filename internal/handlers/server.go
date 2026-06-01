@@ -30,6 +30,9 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	mux.HandleFunc("/healthz", s.health)
+	mux.HandleFunc("/feed.xml", s.feed)
+	mux.HandleFunc("/sitemap.xml", s.sitemap)
+	mux.HandleFunc("/robots.txt", s.robots)
 	mux.HandleFunc("/posts/", s.post)
 	mux.HandleFunc("/", s.index)
 	return mux

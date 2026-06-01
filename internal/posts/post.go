@@ -3,7 +3,6 @@ package posts
 import (
 	"bytes"
 	"fmt"
-	"html"
 	"html/template"
 	"io/fs"
 	"os"
@@ -12,6 +11,12 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	goldmarkhtml "github.com/yuin/goldmark/renderer/html"
+	"gopkg.in/yaml.v3"
 )
 
 type Post struct {
@@ -28,6 +33,24 @@ type Store struct {
 	bySlug map[string]Post
 }
 
+type frontMatter struct {
+	Title       string   `yaml:"title"`
+	Slug        string   `yaml:"slug"`
+	Description string   `yaml:"description"`
+	Published   string   `yaml:"published"`
+	Tags        []string `yaml:"tags"`
+	Draft       bool     `yaml:"draft"`
+}
+
+var (
+	slugPattern      = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+	markdownRenderer = goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		goldmark.WithRendererOptions(goldmarkhtml.WithXHTML()),
+	)
+)
+
 func LoadDir(dir string) (*Store, error) {
 	var loaded []Post
 
@@ -39,11 +62,13 @@ func LoadDir(dir string) (*Store, error) {
 			return nil
 		}
 
-		post, err := loadPost(path)
+		post, include, err := loadPost(path)
 		if err != nil {
 			return err
 		}
-		loaded = append(loaded, post)
+		if include {
+			loaded = append(loaded, post)
+		}
 		return nil
 	})
 	if err != nil {
@@ -56,6 +81,9 @@ func LoadDir(dir string) (*Store, error) {
 
 	bySlug := make(map[string]Post, len(loaded))
 	for _, post := range loaded {
+		if _, exists := bySlug[post.Slug]; exists {
+			return nil, fmt.Errorf("duplicate post slug %q", post.Slug)
+		}
 		bySlug[post.Slug] = post
 	}
 
@@ -74,205 +102,103 @@ func (s *Store) Find(slug string) (Post, bool) {
 	return post, ok
 }
 
-func loadPost(path string) (Post, error) {
+func loadPost(path string) (Post, bool, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return Post{}, err
+		return Post{}, false, err
 	}
 
-	meta, body := splitFrontMatter(string(raw))
-	slug := meta["slug"]
-	if slug == "" {
-		slug = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	metaBytes, body, err := splitFrontMatter(raw)
+	if err != nil {
+		return Post{}, false, fmt.Errorf("%s: %w", path, err)
 	}
 
-	published := time.Now()
-	if value := meta["published"]; value != "" {
-		parsed, err := time.Parse("2006-01-02", value)
-		if err != nil {
-			return Post{}, fmt.Errorf("%s: parse published: %w", path, err)
-		}
-		published = parsed
+	var meta frontMatter
+	if err := yaml.Unmarshal(metaBytes, &meta); err != nil {
+		return Post{}, false, fmt.Errorf("%s: parse frontmatter: %w", path, err)
+	}
+	if meta.Draft {
+		return Post{}, false, nil
 	}
 
-	title := meta["title"]
-	if title == "" {
-		title = strings.ReplaceAll(slug, "-", " ")
+	if err := validateFrontMatter(path, meta); err != nil {
+		return Post{}, false, err
+	}
+
+	published, err := time.Parse("2006-01-02", meta.Published)
+	if err != nil {
+		return Post{}, false, fmt.Errorf("%s: published must use YYYY-MM-DD: %w", path, err)
+	}
+
+	rendered, err := renderMarkdown(body)
+	if err != nil {
+		return Post{}, false, fmt.Errorf("%s: render markdown: %w", path, err)
 	}
 
 	return Post{
-		Title:       title,
-		Slug:        slug,
-		Description: meta["description"],
+		Title:       strings.TrimSpace(meta.Title),
+		Slug:        strings.TrimSpace(meta.Slug),
+		Description: strings.TrimSpace(meta.Description),
 		Published:   published,
-		Tags:        parseTags(meta["tags"]),
-		Body:        renderMarkdown(body),
-	}, nil
+		Tags:        cleanTags(meta.Tags),
+		Body:        rendered,
+	}, true, nil
 }
 
-func splitFrontMatter(raw string) (map[string]string, string) {
-	meta := map[string]string{}
-	raw = strings.ReplaceAll(raw, "\r\n", "\n")
-
-	if !strings.HasPrefix(raw, "---\n") {
-		return meta, raw
+func splitFrontMatter(raw []byte) ([]byte, []byte, error) {
+	raw = bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))
+	if !bytes.HasPrefix(raw, []byte("---\n")) {
+		return nil, nil, fmt.Errorf("missing YAML frontmatter")
 	}
 
-	rest := strings.TrimPrefix(raw, "---\n")
-	parts := strings.SplitN(rest, "\n---\n", 2)
+	rest := bytes.TrimPrefix(raw, []byte("---\n"))
+	parts := bytes.SplitN(rest, []byte("\n---\n"), 2)
 	if len(parts) != 2 {
-		return meta, raw
+		return nil, nil, fmt.Errorf("unterminated YAML frontmatter")
 	}
 
-	for _, line := range strings.Split(parts[0], "\n") {
-		key, value, ok := strings.Cut(line, ":")
-		if !ok {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		value = strings.Trim(strings.TrimSpace(value), "\"")
-		meta[key] = value
-	}
-
-	return meta, parts[1]
+	return parts[0], parts[1], nil
 }
 
-func parseTags(raw string) []string {
-	raw = strings.TrimSpace(raw)
-	raw = strings.TrimPrefix(raw, "[")
-	raw = strings.TrimSuffix(raw, "]")
-	if raw == "" {
+func validateFrontMatter(path string, meta frontMatter) error {
+	switch {
+	case strings.TrimSpace(meta.Title) == "":
+		return fmt.Errorf("%s: missing required frontmatter field title", path)
+	case strings.TrimSpace(meta.Slug) == "":
+		return fmt.Errorf("%s: missing required frontmatter field slug", path)
+	case !slugPattern.MatchString(strings.TrimSpace(meta.Slug)):
+		return fmt.Errorf("%s: slug %q must be lowercase kebab-case", path, meta.Slug)
+	case strings.TrimSpace(meta.Description) == "":
+		return fmt.Errorf("%s: missing required frontmatter field description", path)
+	case strings.TrimSpace(meta.Published) == "":
+		return fmt.Errorf("%s: missing required frontmatter field published", path)
+	}
+	return nil
+}
+
+func cleanTags(tags []string) []string {
+	if len(tags) == 0 {
 		return nil
 	}
 
-	parts := strings.Split(raw, ",")
-	tags := make([]string, 0, len(parts))
-	for _, part := range parts {
-		tag := strings.Trim(strings.TrimSpace(part), "\"")
-		if tag != "" {
-			tags = append(tags, tag)
+	cleaned := make([]string, 0, len(tags))
+	seen := map[string]bool{}
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" || seen[tag] {
+			continue
 		}
+		seen[tag] = true
+		cleaned = append(cleaned, tag)
 	}
-	return tags
+	return cleaned
 }
 
-func renderMarkdown(raw string) template.HTML {
-	lines := strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n")
+func renderMarkdown(raw []byte) (template.HTML, error) {
 	var out bytes.Buffer
-	var paragraph []string
-	inCode := false
-	inList := false
-
-	flushParagraph := func() {
-		if len(paragraph) == 0 {
-			return
-		}
-		out.WriteString("<p>")
-		out.WriteString(renderInline(strings.Join(paragraph, " ")))
-		out.WriteString("</p>\n")
-		paragraph = nil
+	if err := markdownRenderer.Convert(raw, &out); err != nil {
+		return "", err
 	}
 
-	flushList := func() {
-		if inList {
-			out.WriteString("</ul>\n")
-			inList = false
-		}
-	}
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmed, "```") {
-			flushParagraph()
-			flushList()
-			if inCode {
-				out.WriteString("</code></pre>\n")
-				inCode = false
-			} else {
-				out.WriteString("<pre><code>")
-				inCode = true
-			}
-			continue
-		}
-
-		if inCode {
-			out.WriteString(html.EscapeString(line))
-			out.WriteByte('\n')
-			continue
-		}
-
-		if trimmed == "" {
-			flushParagraph()
-			flushList()
-			continue
-		}
-
-		switch {
-		case strings.HasPrefix(trimmed, "### "):
-			flushParagraph()
-			flushList()
-			out.WriteString("<h3>")
-			out.WriteString(renderInline(strings.TrimPrefix(trimmed, "### ")))
-			out.WriteString("</h3>\n")
-		case strings.HasPrefix(trimmed, "## "):
-			flushParagraph()
-			flushList()
-			out.WriteString("<h2>")
-			out.WriteString(renderInline(strings.TrimPrefix(trimmed, "## ")))
-			out.WriteString("</h2>\n")
-		case strings.HasPrefix(trimmed, "# "):
-			flushParagraph()
-			flushList()
-			out.WriteString("<h1>")
-			out.WriteString(renderInline(strings.TrimPrefix(trimmed, "# ")))
-			out.WriteString("</h1>\n")
-		case strings.HasPrefix(trimmed, "> "):
-			flushParagraph()
-			flushList()
-			out.WriteString("<blockquote>")
-			out.WriteString(renderInline(strings.TrimPrefix(trimmed, "> ")))
-			out.WriteString("</blockquote>\n")
-		case strings.HasPrefix(trimmed, "- "):
-			flushParagraph()
-			if !inList {
-				out.WriteString("<ul>\n")
-				inList = true
-			}
-			out.WriteString("<li>")
-			out.WriteString(renderInline(strings.TrimPrefix(trimmed, "- ")))
-			out.WriteString("</li>\n")
-		case trimmed == "---":
-			flushParagraph()
-			flushList()
-			out.WriteString("<hr>\n")
-		default:
-			flushList()
-			paragraph = append(paragraph, trimmed)
-		}
-	}
-
-	flushParagraph()
-	flushList()
-	if inCode {
-		out.WriteString("</code></pre>\n")
-	}
-
-	return template.HTML(out.String())
-}
-
-var (
-	imageRe      = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
-	linkRe       = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
-	boldRe       = regexp.MustCompile(`\*\*([^*]+)\*\*`)
-	inlineCodeRe = regexp.MustCompile("`([^`]+)`")
-)
-
-func renderInline(raw string) string {
-	escaped := html.EscapeString(raw)
-	escaped = imageRe.ReplaceAllString(escaped, `<img src="$2" alt="$1">`)
-	escaped = linkRe.ReplaceAllString(escaped, `<a href="$2">$1</a>`)
-	escaped = boldRe.ReplaceAllString(escaped, `<strong>$1</strong>`)
-	escaped = inlineCodeRe.ReplaceAllString(escaped, `<code>$1</code>`)
-	return escaped
+	return template.HTML(out.String()), nil
 }
