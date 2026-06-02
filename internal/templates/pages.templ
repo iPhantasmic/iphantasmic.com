@@ -5,17 +5,75 @@ import (
 	"iphantasmic.com/internal/posts"
 )
 
-templ Layout(site config.Site, title string, year int) {
+type Meta struct {
+	Title       string
+	Description string
+	URL         string
+	Type        string
+	Image       string
+}
+
+func SiteMeta(site config.Site) Meta {
+	return Meta{
+		Title:       site.Name,
+		Description: site.Description,
+		URL:         site.URL("/"),
+		Type:        "website",
+	}
+}
+
+func PostMeta(site config.Site, post posts.Post) Meta {
+	urlPath := "/posts/" + post.Slug
+	if post.Kind == "page" {
+		urlPath = "/" + post.Slug
+	}
+
+	return Meta{
+		Title:       post.Title,
+		Description: post.Description,
+		URL:         site.URL(urlPath),
+		Type:        "article",
+	}
+}
+
+func NotFoundMeta(site config.Site) Meta {
+	return Meta{
+		Title:       "Page not found",
+		Description: "The requested page could not be found.",
+		URL:         site.URL("/404"),
+		Type:        "website",
+		Image:       site.URL("/static/images/404.png"),
+	}
+}
+
+templ Layout(site config.Site, meta Meta, year int) {
 	<!doctype html>
 	<html lang="en">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<meta name="description" content={ site.Description }/>
-			<title>{ title }</title>
+			<meta name="description" content={ meta.Description }/>
+			<meta name="robots" content="index,follow"/>
+			<title>{ meta.Title }</title>
+			<link rel="canonical" href={ templ.URL(meta.URL) }/>
+			<link rel="alternate" type="application/rss+xml" title={ site.Name } href="/feed.xml"/>
 			<link rel="icon" href="/favicon.ico"/>
 			<link rel="manifest" href="/static/manifest.json"/>
 			<link rel="stylesheet" href="/assets/css/app.css"/>
+			<meta property="og:site_name" content={ site.Name }/>
+			<meta property="og:type" content={ meta.Type }/>
+			<meta property="og:title" content={ meta.Title }/>
+			<meta property="og:description" content={ meta.Description }/>
+			<meta property="og:url" content={ meta.URL }/>
+			if meta.Image != "" {
+				<meta property="og:image" content={ meta.Image }/>
+				<meta name="twitter:card" content="summary_large_image"/>
+				<meta name="twitter:image" content={ meta.Image }/>
+			} else {
+				<meta name="twitter:card" content="summary"/>
+			}
+			<meta name="twitter:title" content={ meta.Title }/>
+			<meta name="twitter:description" content={ meta.Description }/>
 			<script src="/assets/js/theme.js" defer></script>
 		</head>
 		<body>
@@ -40,7 +98,7 @@ templ Layout(site config.Site, title string, year int) {
 }
 
 templ Index(site config.Site, year int, list []posts.Post) {
-	@Layout(site, site.Name, year) {
+	@Layout(site, SiteMeta(site), year) {
 		<section class="hero">
 			<p class="eyebrow">Standalone markdown POC</p>
 			<h1>{ site.Name }</h1>
@@ -75,7 +133,7 @@ templ PostCard(post posts.Post) {
 }
 
 templ PostPage(site config.Site, year int, post posts.Post) {
-	@Layout(site, post.Title, year) {
+	@Layout(site, PostMeta(site, post), year) {
 		<article class="post">
 			<header class="post-header">
 				<a class="back-link" href="/">&larr; All posts</a>
@@ -98,11 +156,12 @@ templ PostPage(site config.Site, year int, post posts.Post) {
 }
 
 templ NotFound(site config.Site, year int) {
-	@Layout(site, "Page not found", year) {
+	@Layout(site, NotFoundMeta(site), year) {
 		<section class="empty-state">
 			<p class="eyebrow">404</p>
 			<h1>Page not found</h1>
 			<p>The page you are looking for does not exist in this POC.</p>
+			<img class="error-image" src="/static/images/404.png" alt="404 illustration"/>
 			<a class="button-link" href="/">Return home</a>
 		</section>
 	}

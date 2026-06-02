@@ -229,6 +229,12 @@
     border-radius: 999px;
   }
 
+  .error-image {
+    display: block;
+    width: min(100%, 640px);
+    margin: 28px auto 8px;
+  }
+
   .site-footer {
     display: flex;
     justify-content: center;
