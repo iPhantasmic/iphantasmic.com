@@ -37,8 +37,9 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request) {
 
 	posts := s.posts.All()
 	items := make([]rssItem, 0, len(posts))
+	lastModified := time.Time{}
 	for _, post := range posts {
-		link := s.site.URL("/posts/" + post.Slug)
+		link := s.site.URL(post.URLPath())
 		items = append(items, rssItem{
 			Title:       post.Title,
 			Link:        link,
@@ -46,11 +47,14 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request) {
 			PubDate:     post.Published.Format(time.RFC1123Z),
 			Description: post.Description,
 		})
+		if post.LastModified().After(lastModified) {
+			lastModified = post.LastModified()
+		}
 	}
 
 	lastBuildDate := time.Now().Format(time.RFC1123Z)
-	if len(posts) > 0 {
-		lastBuildDate = posts[0].Published.Format(time.RFC1123Z)
+	if !lastModified.IsZero() {
+		lastBuildDate = lastModified.Format(time.RFC1123Z)
 	}
 
 	writeXML(w, "application/rss+xml; charset=utf-8", rssFeed{

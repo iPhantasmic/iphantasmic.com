@@ -10,6 +10,7 @@ type Meta struct {
 	Title       string
 	Description string
 	URL         string
+	Canonical   string
 	Type        string
 	Image       string
 }
@@ -19,21 +20,30 @@ func SiteMeta(site config.Site) Meta {
 		Title:       site.Name,
 		Description: site.Description,
 		URL:         site.URL("/"),
+		Canonical:   site.URL("/"),
 		Type:        "website",
 	}
 }
 
 func PostMeta(site config.Site, post posts.Post) Meta {
-	urlPath := "/posts/" + post.Slug
+	localURL := site.URL(post.URLPath())
+	canonicalURL := strings.TrimSpace(post.Canonical)
+	if canonicalURL == "" {
+		canonicalURL = localURL
+	}
+
+	metaType := "article"
 	if post.Kind == "page" {
-		urlPath = "/" + post.Slug
+		metaType = "website"
 	}
 
 	return Meta{
 		Title:       post.Title,
 		Description: post.Description,
-		URL:         site.URL(urlPath),
-		Type:        "article",
+		URL:         localURL,
+		Canonical:   canonicalURL,
+		Type:        metaType,
+		Image:       absoluteContentURL(site, post.Cover),
 	}
 }
 
@@ -42,6 +52,7 @@ func NotFoundMeta(site config.Site) Meta {
 		Title:       "Page not found",
 		Description: "The requested page could not be found.",
 		URL:         site.URL("/404"),
+		Canonical:   site.URL("/404"),
 		Type:        "website",
 		Image:       site.URL("/static/images/404.png"),
 	}
@@ -54,6 +65,17 @@ func IsImageIcon(icon string) bool {
 		strings.HasPrefix(icon, "https://")
 }
 
+func absoluteContentURL(site config.Site, value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		return value
+	}
+	return site.URL(value)
+}
+
 templ Layout(site config.Site, meta Meta, year int) {
 	<!doctype html>
 	<html lang="en">
@@ -63,7 +85,7 @@ templ Layout(site config.Site, meta Meta, year int) {
 			<meta name="description" content={ meta.Description }/>
 			<meta name="robots" content="index,follow"/>
 			<title>{ meta.Title }</title>
-			<link rel="canonical" href={ templ.URL(meta.URL) }/>
+			<link rel="canonical" href={ templ.URL(meta.Canonical) }/>
 			<link rel="alternate" type="application/rss+xml" title={ site.Name } href="/feed.xml"/>
 			<link rel="icon" href="/favicon.ico"/>
 			<link rel="manifest" href="/static/manifest.json"/>

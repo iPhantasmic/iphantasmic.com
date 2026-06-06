@@ -34,19 +34,25 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/feed.xml", s.feed)
 	mux.HandleFunc("/sitemap.xml", s.sitemap)
 	mux.HandleFunc("/robots.txt", s.robots)
-	mux.HandleFunc("/whoami.exe", s.page)
 	mux.HandleFunc("/posts/", s.post)
-	mux.HandleFunc("/", s.index)
+	mux.HandleFunc("/", s.root)
 	return mux
 }
 
-func (s *Server) index(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
+func (s *Server) root(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		s.render(w, r, http.StatusOK, templates.Index(s.site, time.Now().Year(), s.posts.All()))
+		return
+	}
+
+	slug := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
+	page, ok := s.posts.Find(slug)
+	if !ok || page.Kind != "page" {
 		s.notFound(w, r)
 		return
 	}
 
-	s.render(w, r, http.StatusOK, templates.Index(s.site, time.Now().Year(), s.posts.All()))
+	s.render(w, r, http.StatusOK, templates.PostPage(s.site, time.Now().Year(), page))
 }
 
 func (s *Server) post(w http.ResponseWriter, r *http.Request) {
@@ -63,17 +69,6 @@ func (s *Server) post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, http.StatusOK, templates.PostPage(s.site, time.Now().Year(), post))
-}
-
-func (s *Server) page(w http.ResponseWriter, r *http.Request) {
-	slug := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
-	page, ok := s.posts.Find(slug)
-	if !ok || page.Kind != "page" {
-		s.notFound(w, r)
-		return
-	}
-
-	s.render(w, r, http.StatusOK, templates.PostPage(s.site, time.Now().Year(), page))
 }
 
 func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {

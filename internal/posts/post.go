@@ -25,7 +25,11 @@ type Post struct {
 	Description string
 	Kind        string
 	Icon        string
+	Cover       string
+	Canonical   string
+	Featured    bool
 	Published   time.Time
+	Updated     time.Time
 	Tags        []string
 	Body        template.HTML
 }
@@ -42,7 +46,11 @@ type frontMatter struct {
 	Description string   `yaml:"description"`
 	Kind        string   `yaml:"kind"`
 	Icon        string   `yaml:"icon"`
+	Cover       string   `yaml:"cover"`
+	Canonical   string   `yaml:"canonical"`
+	Featured    bool     `yaml:"featured"`
 	Published   string   `yaml:"published"`
+	Updated     string   `yaml:"updated"`
 	Tags        []string `yaml:"tags"`
 	Draft       bool     `yaml:"draft"`
 }
@@ -150,6 +158,11 @@ func loadPost(path string) (Post, bool, error) {
 		return Post{}, false, fmt.Errorf("%s: published must use YYYY-MM-DD: %w", path, err)
 	}
 
+	updated, err := parseOptionalDate(path, "updated", meta.Updated)
+	if err != nil {
+		return Post{}, false, err
+	}
+
 	body = stripLeadingTitleHeading(body, meta.Title)
 
 	rendered, err := renderMarkdown(body)
@@ -163,7 +176,11 @@ func loadPost(path string) (Post, bool, error) {
 		Description: strings.TrimSpace(meta.Description),
 		Kind:        cleanKind(meta.Kind),
 		Icon:        strings.TrimSpace(meta.Icon),
+		Cover:       strings.TrimSpace(meta.Cover),
+		Canonical:   strings.TrimSpace(meta.Canonical),
+		Featured:    meta.Featured,
 		Published:   published,
+		Updated:     updated,
 		Tags:        cleanTags(meta.Tags),
 		Body:        rendered,
 	}, true, nil
@@ -226,6 +243,33 @@ func cleanTags(tags []string) []string {
 		cleaned = append(cleaned, tag)
 	}
 	return cleaned
+}
+
+func parseOptionalDate(path, field, value string) (time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, nil
+	}
+
+	parsed, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("%s: %s must use YYYY-MM-DD: %w", path, field, err)
+	}
+	return parsed, nil
+}
+
+func (p Post) LastModified() time.Time {
+	if !p.Updated.IsZero() {
+		return p.Updated
+	}
+	return p.Published
+}
+
+func (p Post) URLPath() string {
+	if p.Kind == "page" {
+		return "/" + p.Slug
+	}
+	return "/posts/" + p.Slug
 }
 
 func renderMarkdown(raw []byte) (template.HTML, error) {

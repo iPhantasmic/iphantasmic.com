@@ -30,7 +30,7 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request) {
 	for _, post := range s.posts.SitemapPages() {
 		urls = append(urls, sitemapURL{
 			Loc:     s.pageURL(post),
-			LastMod: post.Published.Format("2006-01-02"),
+			LastMod: post.LastModified().Format("2006-01-02"),
 		})
 	}
 
@@ -41,10 +41,7 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pageURL(post posts.Post) string {
-	if post.Kind == "page" {
-		return s.site.URL("/" + post.Slug)
-	}
-	return s.site.URL("/posts/" + post.Slug)
+	return s.site.URL(post.URLPath())
 }
 
 func (s *Server) robots(w http.ResponseWriter, r *http.Request) {
