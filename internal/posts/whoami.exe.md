@@ -3,27 +3,24 @@ title: "whoami.exe"
 slug: "whoami.exe"
 kind: "page"
 description: "A starter profile page for the standalone GoTTH site."
-published: "2026-06-01"
+icon: "🖥️"
+published: "2026-06-06"
 ---
 
 # whoami.exe
 
-This is a starter page for the old `whoami.exe` navigation item.
+Singaporean (+65)
 
-Replace this with the version of yourself you want the site to carry:
+BSc. Computer Science (Cybersecurity)
 
-- what you are building
-- what you care about
-- where people can find your work
-- what kind of collaborations you are open to
+Singapore Management University (SMU)
 
-## Current Stack
+Full Time Keyboard Warrior 🎮
 
-- Go
-- templ
-- Tailwind CSS
-- HTMX soon
-- Markdown content
+# **What I Do**
 
-> This page is intentionally plain for now. It is here so the route, sitemap,
-> layout, and authoring flow are ready before the writing is.
+---
+
+I am an aspiring Red Team practitioner with prior experience in Blue and Green Team operations.
+
+Apart from learning and breaking systems, I spend my time on the football pitch, going for night runs, reading up on cyberwarfare and understanding geopolitics.
