@@ -16,6 +16,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	extast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/parser"
 	goldmarkhtml "github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
@@ -35,6 +36,7 @@ type Post struct {
 	Published   time.Time
 	Updated     time.Time
 	Tags        []string
+	TOC         []Heading
 	Body        template.HTML
 	searchText  string
 }
@@ -43,12 +45,26 @@ type Store struct {
 	posts  []Post
 	pages  []Post
 	bySlug map[string]Post
+	tags   []Tag
+	byTag  map[string][]Post
 }
 
 type SearchResult struct {
 	Post    Post
 	Excerpt string
 	Score   int
+}
+
+type Heading struct {
+	Level int
+	ID    string
+	Text  string
+}
+
+type Tag struct {
+	Name  string
+	Slug  string
+	Count int
 }
 
 type frontMatter struct {
@@ -86,6 +102,7 @@ var (
 	}
 	markdownRenderer = goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(extension.DefinitionList, extension.Footnote),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 			parser.WithASTTransformers(util.Prioritized(contentASTTransformer{}, 500)),
@@ -128,11 +145,23 @@ func LoadDir(dir string) (*Store, error) {
 	bySlug := make(map[string]Post, len(loaded))
 	posts := make([]Post, 0, len(loaded))
 	pages := make([]Post, 0)
+	byTag := make(map[string][]Post)
+	tagNames := make(map[string]string)
 	for _, post := range loaded {
 		if _, exists := bySlug[post.Slug]; exists {
 			return nil, fmt.Errorf("duplicate post slug %q", post.Slug)
 		}
 		bySlug[post.Slug] = post
+		for _, tag := range post.Tags {
+			slug := TagSlug(tag)
+			if slug == "" {
+				continue
+			}
+			if _, exists := tagNames[slug]; !exists {
+				tagNames[slug] = tag
+			}
+			byTag[slug] = append(byTag[slug], post)
+		}
 		if post.Kind == "page" {
 			pages = append(pages, post)
 		} else {
@@ -140,10 +169,24 @@ func LoadDir(dir string) (*Store, error) {
 		}
 	}
 
+	tags := make([]Tag, 0, len(tagNames))
+	for slug, name := range tagNames {
+		tags = append(tags, Tag{
+			Name:  name,
+			Slug:  slug,
+			Count: len(byTag[slug]),
+		})
+	}
+	sort.SliceStable(tags, func(i, j int) bool {
+		return strings.ToLower(tags[i].Name) < strings.ToLower(tags[j].Name)
+	})
+
 	return &Store{
 		posts:  posts,
 		pages:  pages,
 		bySlug: bySlug,
+		tags:   tags,
+		byTag:  byTag,
 	}, nil
 }
 
@@ -161,6 +204,24 @@ func (s *Store) SitemapPages() []Post {
 	items = append(items, s.pages...)
 	items = append(items, s.posts...)
 	return items
+}
+
+func (s *Store) Tags() []Tag {
+	return append([]Tag(nil), s.tags...)
+}
+
+func (s *Store) PostsByTag(slug string) (Tag, []Post, bool) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return Tag{}, nil, false
+	}
+
+	for _, tag := range s.tags {
+		if tag.Slug == slug {
+			return tag, append([]Post(nil), s.byTag[slug]...), true
+		}
+	}
+	return Tag{}, nil, false
 }
 
 func (s *Store) Search(query string, limit int) []SearchResult {
@@ -238,7 +299,7 @@ func loadPost(path string) (Post, bool, error) {
 	body = stripLeadingTitleHeading(body, meta.Title)
 	searchText := plainMarkdownText(body)
 
-	rendered, err := renderMarkdown(body, contentBase)
+	rendered, headings, err := renderMarkdown(body, contentBase)
 	if err != nil {
 		return Post{}, false, fmt.Errorf("%s: render markdown: %w", path, err)
 	}
@@ -255,6 +316,7 @@ func loadPost(path string) (Post, bool, error) {
 		Published:   published,
 		Updated:     updated,
 		Tags:        cleanTags(meta.Tags),
+		TOC:         headings,
 		Body:        rendered,
 		searchText:  searchText,
 	}, true, nil
@@ -317,6 +379,44 @@ func cleanTags(tags []string) []string {
 		cleaned = append(cleaned, tag)
 	}
 	return cleaned
+}
+
+func TagSlug(tag string) string {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	if tag == "" {
+		return ""
+	}
+
+	var builder strings.Builder
+	lastDash := false
+	for _, r := range tag {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			builder.WriteRune(r)
+			lastDash = false
+			continue
+		}
+		if !lastDash && builder.Len() > 0 {
+			builder.WriteByte('-')
+			lastDash = true
+		}
+	}
+
+	return strings.Trim(builder.String(), "-")
+}
+
+func TagURLPath(tag string) string {
+	slug := TagSlug(tag)
+	if slug == "" {
+		return "/tags"
+	}
+	return "/tags/" + slug
+}
+
+func (t Tag) URLPath() string {
+	if t.Slug == "" {
+		return "/tags"
+	}
+	return "/tags/" + t.Slug
 }
 
 func parseOptionalDate(path, field, value string) (time.Time, error) {
@@ -384,18 +484,19 @@ func weightedContains(value, term string, weight int) int {
 	return weight
 }
 
-func renderMarkdown(raw []byte, contentBase string) (template.HTML, error) {
+func renderMarkdown(raw []byte, contentBase string) (template.HTML, []Heading, error) {
 	var out bytes.Buffer
 
 	context := parser.NewContext()
 	context.Set(contentBaseKey, contentBase)
 	reader := text.NewReader(raw)
 	doc := markdownRenderer.Parser().Parse(reader, parser.WithContext(context))
+	headings := collectHeadings(doc, raw)
 	if err := markdownRenderer.Renderer().Render(&out, raw, doc); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return template.HTML(stripRenderedCalloutMarkers(out.String())), nil
+	return template.HTML(stripRenderedCalloutMarkers(out.String())), headings, nil
 }
 
 func plainMarkdownText(raw []byte) string {
@@ -501,12 +602,121 @@ func (contentASTTransformer) Transform(node *ast.Document, reader text.Reader, c
 		switch typed := node.(type) {
 		case *ast.Image:
 			typed.Destination = []byte(resolveContentAssetPath(contentBase, string(typed.Destination)))
+			typed.SetAttributeString("loading", "lazy")
+			typed.SetAttributeString("decoding", "async")
+		case *ast.Link:
+			destination := string(typed.Destination)
+			typed.Destination = []byte(resolveContentAssetPath(contentBase, destination))
+			if isExternalURL(destination) {
+				typed.SetAttributeString("target", "_blank")
+				typed.SetAttributeString("rel", "noopener noreferrer")
+			}
+		case *ast.Paragraph:
+			if paragraphContainsOnlyImages(typed, source) {
+				typed.SetAttributeString("class", appendClass(typed, "media-block"))
+			}
+		case *ast.List:
+			if listContainsTask(typed) {
+				typed.SetAttributeString("class", appendClass(typed, "contains-task-list"))
+			}
 		case *ast.Blockquote:
 			classifyCallout(typed, source)
 		}
 
 		return ast.WalkContinue, nil
 	})
+}
+
+func collectHeadings(doc ast.Node, source []byte) []Heading {
+	var headings []Heading
+	_ = ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		heading, ok := node.(*ast.Heading)
+		if !ok || heading.Level > 3 {
+			return ast.WalkContinue, nil
+		}
+
+		id := attributeString(heading, "id")
+		text := strings.Join(strings.Fields(string(heading.Text(source))), " ")
+		if id == "" || text == "" {
+			return ast.WalkContinue, nil
+		}
+
+		headings = append(headings, Heading{
+			Level: heading.Level,
+			ID:    id,
+			Text:  text,
+		})
+		return ast.WalkContinue, nil
+	})
+	return headings
+}
+
+func attributeString(node ast.Node, name string) string {
+	value, ok := node.AttributeString(name)
+	if !ok {
+		return ""
+	}
+
+	switch typed := value.(type) {
+	case []byte:
+		return string(typed)
+	case string:
+		return typed
+	default:
+		return fmt.Sprint(typed)
+	}
+}
+
+func paragraphContainsOnlyImages(paragraph *ast.Paragraph, source []byte) bool {
+	hasImage := false
+	for child := paragraph.FirstChild(); child != nil; child = child.NextSibling() {
+		switch typed := child.(type) {
+		case *ast.Image:
+			hasImage = true
+		case *ast.Text:
+			if strings.TrimSpace(string(typed.Value(source))) != "" {
+				return false
+			}
+		case *ast.String:
+			if strings.TrimSpace(string(typed.Value)) != "" {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return hasImage
+}
+
+func listContainsTask(list *ast.List) bool {
+	found := false
+	_ = ast.Walk(list, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering || found {
+			return ast.WalkContinue, nil
+		}
+		if _, ok := node.(*extast.TaskCheckBox); ok {
+			found = true
+			return ast.WalkStop, nil
+		}
+		return ast.WalkContinue, nil
+	})
+	return found
+}
+
+func appendClass(node ast.Node, class string) string {
+	current := strings.TrimSpace(attributeString(node, "class"))
+	if current == "" {
+		return class
+	}
+	return current + " " + class
+}
+
+func isExternalURL(value string) bool {
+	return strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://")
 }
 
 func classifyCallout(blockquote *ast.Blockquote, source []byte) {

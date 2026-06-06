@@ -35,6 +35,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/sitemap.xml", s.sitemap)
 	mux.HandleFunc("/robots.txt", s.robots)
 	mux.HandleFunc("/search", s.search)
+	mux.HandleFunc("/tags/", s.tag)
+	mux.HandleFunc("/tags", s.tags)
 	mux.HandleFunc("/posts/", s.post)
 	mux.HandleFunc("/", s.root)
 	return mux
@@ -86,6 +88,40 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, http.StatusOK, templates.Search(s.site, time.Now().Year(), query, results))
+}
+
+func (s *Server) tags(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if r.URL.Path != "/tags" {
+		s.notFound(w, r)
+		return
+	}
+
+	s.render(w, r, http.StatusOK, templates.Tags(s.site, time.Now().Year(), s.posts.Tags()))
+}
+
+func (s *Server) tag(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	slug := strings.TrimPrefix(path.Clean(r.URL.Path), "/tags/")
+	if slug == "" || slug == "." {
+		http.Redirect(w, r, "/tags", http.StatusMovedPermanently)
+		return
+	}
+
+	tag, taggedPosts, ok := s.posts.PostsByTag(slug)
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+
+	s.render(w, r, http.StatusOK, templates.TagPage(s.site, time.Now().Year(), tag, taggedPosts))
 }
 
 func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {

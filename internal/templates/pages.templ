@@ -3,6 +3,7 @@ package templates
 import (
 	"iphantasmic.com/internal/config"
 	"iphantasmic.com/internal/posts"
+	"strconv"
 	"strings"
 )
 
@@ -79,6 +80,29 @@ func SearchMeta(site config.Site, query string) Meta {
 	}
 }
 
+func TagsMeta(site config.Site) Meta {
+	return Meta{
+		Title:       "Tags",
+		Description: "Browse posts by tag on " + site.Name + ".",
+		URL:         site.URL("/tags"),
+		Canonical:   site.URL("/tags"),
+		ActivePath:  "/tags",
+		Type:        "website",
+	}
+}
+
+func TagMeta(site config.Site, tag posts.Tag) Meta {
+	path := tag.URLPath()
+	return Meta{
+		Title:       "Tag: " + tag.Name,
+		Description: "Posts tagged " + tag.Name + " on " + site.Name + ".",
+		URL:         site.URL(path),
+		Canonical:   site.URL(path),
+		ActivePath:  path,
+		Type:        "website",
+	}
+}
+
 func IsImageIcon(icon string) bool {
 	icon = strings.TrimSpace(icon)
 	return strings.HasPrefix(icon, "/") ||
@@ -115,6 +139,9 @@ func navLinkActive(activePath, linkPath string) bool {
 	if linkPath == "/" {
 		return activePath == "/" || strings.HasPrefix(activePath, "/posts/")
 	}
+	if linkPath == "/tags" {
+		return activePath == "/tags" || strings.HasPrefix(activePath, "/tags/")
+	}
 	return activePath == linkPath
 }
 
@@ -130,6 +157,23 @@ func postCardClass(post posts.Post) string {
 		return "post-card post-card-featured"
 	}
 	return "post-card"
+}
+
+func tocLinkClass(level int) string {
+	if level <= 1 {
+		return "toc-link toc-level-1"
+	}
+	if level == 2 {
+		return "toc-link toc-level-2"
+	}
+	return "toc-link toc-level-3"
+}
+
+func postCountLabel(count int) string {
+	if count == 1 {
+		return "1 post"
+	}
+	return strconv.Itoa(count) + " posts"
 }
 
 templ Layout(site config.Site, meta Meta, year int) {
@@ -171,6 +215,7 @@ templ Layout(site config.Site, meta Meta, year int) {
 				</a>
 				<nav class="nav">
 					<a class={ navLinkClass(meta.ActivePath, "/whoami.exe") } href="/whoami.exe" aria-current={ navAriaCurrent(meta.ActivePath, "/whoami.exe") }>whoami.exe</a>
+					<a class={ navLinkClass(meta.ActivePath, "/tags") } href="/tags" aria-current={ navAriaCurrent(meta.ActivePath, "/tags") }>Tags</a>
 					<a class={ iconLinkClass(meta.ActivePath, "/search") } href="/search" aria-label="Search" title="Search" aria-current={ navAriaCurrent(meta.ActivePath, "/search") }>
 						@SearchIcon()
 					</a>
@@ -286,17 +331,23 @@ templ PostCard(post posts.Post) {
 			</h2>
 			<p>{ post.Description }</p>
 			if len(post.Tags) > 0 {
-				<ul class="tags" aria-label="Tags">
-					for _, tag := range post.Tags {
-						<li>{ tag }</li>
-					}
-				</ul>
+				@TagList(post.Tags)
 			}
 		</div>
 		if post.Cover != "" {
 			<img class="post-card-cover" src={ templ.SafeURL(post.Cover) } alt=""/>
 		}
 	</article>
+}
+
+templ TagList(tags []string) {
+	<ul class="tags" aria-label="Tags">
+		for _, tag := range tags {
+			<li>
+				<a href={ templ.URL(posts.TagURLPath(tag)) }>{ tag }</a>
+			</li>
+		}
+	</ul>
 }
 
 templ Search(site config.Site, year int, query string, results []posts.SearchResult) {
@@ -357,6 +408,48 @@ templ SearchResult(result posts.SearchResult) {
 	</article>
 }
 
+templ Tags(site config.Site, year int, tags []posts.Tag) {
+	@Layout(site, TagsMeta(site), year) {
+		<section class="tag-index">
+			<header class="tag-header">
+				<h1>Tags</h1>
+				<p>{ site.Description }</p>
+			</header>
+			if len(tags) == 0 {
+				<p class="search-empty">No tags yet.</p>
+			} else {
+				<ul class="tag-cloud" aria-label="All tags">
+					for _, tag := range tags {
+						<li>
+							<a href={ templ.URL(tag.URLPath()) }>
+								<span>{ tag.Name }</span>
+								<span>{ tag.Count }</span>
+							</a>
+						</li>
+					}
+				</ul>
+			}
+		</section>
+	}
+}
+
+templ TagPage(site config.Site, year int, tag posts.Tag, list []posts.Post) {
+	@Layout(site, TagMeta(site, tag), year) {
+		<section class="tag-page">
+			<header class="tag-header">
+				<p class="eyebrow">Tag</p>
+				<h1>{ tag.Name }</h1>
+				<p>{ postCountLabel(tag.Count) } tagged { tag.Name }.</p>
+			</header>
+			<section class="post-list" aria-label={ "Posts tagged " + tag.Name }>
+				for _, post := range list {
+					@PostCard(post)
+				}
+			</section>
+		</section>
+	}
+}
+
 templ PageIcon(post posts.Post) {
 	if post.Icon != "" {
 		if IsImageIcon(post.Icon) {
@@ -369,38 +462,54 @@ templ PageIcon(post posts.Post) {
 
 templ PostPage(site config.Site, year int, post posts.Post) {
 	@Layout(site, PostMeta(site, post), year) {
-		<article class="post">
-			if post.Kind == "page" {
-				<header class="post-header page-header">
-					@PageIcon(post)
-					<h1>{ post.Title }</h1>
-				</header>
-			} else {
-				<header class="post-header">
-					<div class="post-meta-row">
-						<a class="back-link" href="/">&larr; All posts</a>
-						<time datetime={ post.Published.Format("2006-01-02") }>{ post.Published.Format("January 2, 2006") }</time>
-					</div>
-					@PageIcon(post)
-					<h1>{ post.Title }</h1>
-					<p>{ post.Description }</p>
-					if len(post.Tags) > 0 {
-						<ul class="tags" aria-label="Tags">
-							for _, tag := range post.Tags {
-								<li>{ tag }</li>
-							}
-						</ul>
-					}
-				</header>
+		<div class="post-layout">
+			<article class="post">
+				if post.Kind == "page" {
+					<header class="post-header page-header">
+						@PageIcon(post)
+						<h1>{ post.Title }</h1>
+					</header>
+				} else {
+					<header class="post-header">
+						<div class="post-meta-row">
+							<a class="back-link" href="/">&larr; All posts</a>
+							<time datetime={ post.Published.Format("2006-01-02") }>{ post.Published.Format("January 2, 2006") }</time>
+						</div>
+						@PageIcon(post)
+						<h1>{ post.Title }</h1>
+						<p>{ post.Description }</p>
+						if len(post.Tags) > 0 {
+							@TagList(post.Tags)
+						}
+					</header>
+				}
+				if post.Cover != "" {
+					<img class="post-cover" src={ templ.SafeURL(post.Cover) } alt=""/>
+				}
+				<div class="prose">
+					@templ.Raw(post.Body)
+				</div>
+			</article>
+			if len(post.TOC) > 0 {
+				@TableOfContents(post.TOC)
 			}
-			if post.Cover != "" {
-				<img class="post-cover" src={ templ.SafeURL(post.Cover) } alt=""/>
-			}
-			<div class="prose">
-				@templ.Raw(post.Body)
-			</div>
-		</article>
+		</div>
 	}
+}
+
+templ TableOfContents(headings []posts.Heading) {
+	<aside class="toc-panel" aria-label="Table of contents">
+		<div class="toc-inner">
+			<p>Contents</p>
+			<nav>
+				for _, heading := range headings {
+					<a class={ tocLinkClass(heading.Level) } href={ templ.SafeURL("#" + heading.ID) }>
+						{ heading.Text }
+					</a>
+				}
+			</nav>
+		</div>
+	</aside>
 }
 
 templ NotFound(site config.Site, year int) {
