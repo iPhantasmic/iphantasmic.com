@@ -2,6 +2,7 @@
 title: "Whitehats Social Night 2020 Writeup"
 slug: "whitehats-social-night-2020"
 description: "Writeup for Whitehats Social Night 2020 mini-CTF"
+cover: "/static/content/whitehats-social-night-2020-writeup/cover.png"
 featured: false
 published: "2020-12-08"
 tags: ["CTF", "writeup"]
