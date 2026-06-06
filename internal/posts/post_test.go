@@ -13,8 +13,8 @@ func TestLoadDirLoadsPublishedPosts(t *testing.T) {
 title: "Hello"
 slug: "hello"
 description: "A real post."
-icon: "/static/images/404.png"
-cover: "/static/images/error.png"
+icon: "icon.svg"
+cover: "cover.png"
 canonical: "https://example.com/canonical-hello"
 featured: true
 published: "2026-06-01"
@@ -27,6 +27,21 @@ tags: ["go", "markdown", "go"]
 | Name | Value |
 | --- | --- |
 | Stack | GoTTH |
+
+> [!WARNING]
+> Relative media should resolve to the post content folder.
+
+![Diagram](diagram.png?size=2)
+![Root](/static/images/error.png)
+`)
+	writePost(t, dir, "later.md", `---
+title: "Later"
+slug: "later"
+description: "A later normal post."
+published: "2026-06-05"
+---
+
+Later body.
 `)
 	writePost(t, dir, "draft.md", `---
 title: "Draft"
@@ -55,22 +70,22 @@ Profile page.
 	}
 
 	all := store.All()
-	if len(all) != 1 {
-		t.Fatalf("len(All()) = %d, want 1", len(all))
+	if len(all) != 2 {
+		t.Fatalf("len(All()) = %d, want 2", len(all))
 	}
 
 	post := all[0]
 	if post.Title != "Hello" {
-		t.Fatalf("Title = %q, want Hello", post.Title)
+		t.Fatalf("Title = %q, want featured Hello first", post.Title)
 	}
 	if got := strings.Join(post.Tags, ","); got != "go,markdown" {
 		t.Fatalf("Tags = %q, want go,markdown", got)
 	}
-	if post.Icon != "/static/images/404.png" {
-		t.Fatalf("Icon = %q, want /static/images/404.png", post.Icon)
+	if post.Icon != "/static/content/hello/icon.svg" {
+		t.Fatalf("Icon = %q, want /static/content/hello/icon.svg", post.Icon)
 	}
-	if post.Cover != "/static/images/error.png" {
-		t.Fatalf("Cover = %q, want /static/images/error.png", post.Cover)
+	if post.Cover != "/static/content/hello/cover.png" {
+		t.Fatalf("Cover = %q, want /static/content/hello/cover.png", post.Cover)
 	}
 	if post.Canonical != "https://example.com/canonical-hello" {
 		t.Fatalf("Canonical = %q, want https://example.com/canonical-hello", post.Canonical)
@@ -90,14 +105,26 @@ Profile page.
 	if !strings.Contains(string(post.Body), "<table>") {
 		t.Fatalf("Body did not render a GFM table: %s", post.Body)
 	}
+	if !strings.Contains(string(post.Body), `class="callout callout-warning"`) {
+		t.Fatalf("Body did not render a warning callout: %s", post.Body)
+	}
+	if strings.Contains(string(post.Body), "[!WARNING]") {
+		t.Fatalf("Body still includes callout marker: %s", post.Body)
+	}
+	if !strings.Contains(string(post.Body), `src="/static/content/hello/diagram.png?size=2"`) {
+		t.Fatalf("Body did not resolve a relative image path: %s", post.Body)
+	}
+	if !strings.Contains(string(post.Body), `src="/static/images/error.png"`) {
+		t.Fatalf("Body rewrote a root-relative image path: %s", post.Body)
+	}
 	if _, ok := store.Find("draft"); ok {
 		t.Fatal("Find(draft) found a draft post")
 	}
 	if page, ok := store.Find("whoami.exe"); !ok || page.Kind != "page" || page.URLPath() != "/whoami.exe" {
 		t.Fatalf("Find(whoami.exe) = (%+v, %v), want page", page, ok)
 	}
-	if got := len(store.SitemapPages()); got != 2 {
-		t.Fatalf("len(SitemapPages()) = %d, want 2", got)
+	if got := len(store.SitemapPages()); got != 3 {
+		t.Fatalf("len(SitemapPages()) = %d, want 3", got)
 	}
 }
 

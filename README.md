@@ -93,11 +93,11 @@ slug: "hello-gotth"               # required, lowercase kebab-case or dot-separa
 kind: "post"                      # optional, defaults to post
 description: "Short summary."     # required
 icon: "/static/images/icon.png"    # optional emoji or image URL/path
-cover: "/static/images/cover.png" # optional social preview image URL/path
+cover: "cover.png"                # optional cover/social image URL/path
 canonical: "https://example.com/original-post" # optional canonical override
 published: "2026-06-01"           # required, YYYY-MM-DD
 updated: "2026-06-04"             # optional, YYYY-MM-DD
-featured: false                   # optional, reserved for future homepage treatment
+featured: false                   # optional, floats the post higher on the homepage
 tags: ["go", "markdown"]          # optional
 draft: false                      # optional
 ---
@@ -112,6 +112,31 @@ Drafts can be excluded with:
 
 ```yaml
 draft: true
+```
+
+Local post/page media should live under:
+
+```txt
+static/content/{slug}/
+```
+
+Relative cover, icon, and markdown image paths resolve against that folder. For example, a post with `slug: "hello-gotth"` can use:
+
+```yaml
+cover: "cover.png"
+```
+
+```markdown
+![Diagram](diagram.png)
+```
+
+Those resolve to `/static/content/hello-gotth/cover.png` and `/static/content/hello-gotth/diagram.png`. Root-relative paths like `/static/images/404.png` and remote URLs are left unchanged.
+
+Callouts use GitHub-style blockquote markers:
+
+```markdown
+> [!NOTE]
+> Useful context for the reader.
 ```
 
 ## Starter Pages

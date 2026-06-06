@@ -9,24 +9,22 @@
   }
 
   function updateButton() {
-    var button = document.querySelector("[data-theme-toggle]")
-    if (button) {
-      var label = root.classList.contains("dark") ? "Switch to light mode" : "Switch to dark mode"
+    var label = root.classList.contains("dark") ? "Switch to light mode" : "Switch to dark mode"
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
       button.setAttribute("aria-label", label)
       button.setAttribute("title", label)
-    }
+    })
   }
 
   window.addEventListener("DOMContentLoaded", function () {
     updateButton()
 
-    var button = document.querySelector("[data-theme-toggle]")
-    if (!button) return
-
-    button.addEventListener("click", function () {
-      root.classList.toggle("dark")
-      window.localStorage.setItem(storageKey, root.classList.contains("dark") ? "dark" : "light")
-      updateButton()
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        root.classList.toggle("dark")
+        window.localStorage.setItem(storageKey, root.classList.contains("dark") ? "dark" : "light")
+        updateButton()
+      })
     })
   })
 })()

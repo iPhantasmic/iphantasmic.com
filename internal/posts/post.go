@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/fs"
 	"os"
+	urlpath "path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -13,9 +14,12 @@ import (
 	"time"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	goldmarkhtml "github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -56,10 +60,29 @@ type frontMatter struct {
 }
 
 var (
-	slugPattern      = regexp.MustCompile(`^[a-z0-9]+(?:[-.][a-z0-9]+)*$`)
+	slugPattern       = regexp.MustCompile(`^[a-z0-9]+(?:[-.][a-z0-9]+)*$`)
+	schemePattern     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+	contentBaseKey    = parser.NewContextKey()
+	calloutMarkerKind = map[string]string{
+		"[!NOTE]":      "note",
+		"[!TIP]":       "tip",
+		"[!IMPORTANT]": "important",
+		"[!WARNING]":   "warning",
+		"[!CAUTION]":   "caution",
+	}
+	calloutKindLabel = map[string]string{
+		"note":      "Note",
+		"tip":       "Tip",
+		"important": "Important",
+		"warning":   "Warning",
+		"caution":   "Caution",
+	}
 	markdownRenderer = goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+			parser.WithASTTransformers(util.Prioritized(contentASTTransformer{}, 500)),
+		),
 		goldmark.WithRendererOptions(goldmarkhtml.WithXHTML()),
 	)
 )
@@ -88,7 +111,10 @@ func LoadDir(dir string) (*Store, error) {
 		return nil, err
 	}
 
-	sort.Slice(loaded, func(i, j int) bool {
+	sort.SliceStable(loaded, func(i, j int) bool {
+		if loaded[i].Featured != loaded[j].Featured {
+			return loaded[i].Featured
+		}
 		return loaded[i].Published.After(loaded[j].Published)
 	})
 
@@ -158,6 +184,8 @@ func loadPost(path string) (Post, bool, error) {
 		return Post{}, false, fmt.Errorf("%s: published must use YYYY-MM-DD: %w", path, err)
 	}
 
+	slug := strings.TrimSpace(meta.Slug)
+	contentBase := contentAssetBase(slug)
 	updated, err := parseOptionalDate(path, "updated", meta.Updated)
 	if err != nil {
 		return Post{}, false, err
@@ -165,18 +193,18 @@ func loadPost(path string) (Post, bool, error) {
 
 	body = stripLeadingTitleHeading(body, meta.Title)
 
-	rendered, err := renderMarkdown(body)
+	rendered, err := renderMarkdown(body, contentBase)
 	if err != nil {
 		return Post{}, false, fmt.Errorf("%s: render markdown: %w", path, err)
 	}
 
 	return Post{
 		Title:       strings.TrimSpace(meta.Title),
-		Slug:        strings.TrimSpace(meta.Slug),
+		Slug:        slug,
 		Description: strings.TrimSpace(meta.Description),
 		Kind:        cleanKind(meta.Kind),
-		Icon:        strings.TrimSpace(meta.Icon),
-		Cover:       strings.TrimSpace(meta.Cover),
+		Icon:        cleanIcon(meta.Icon, contentBase),
+		Cover:       resolveContentAssetPath(contentBase, meta.Cover),
 		Canonical:   strings.TrimSpace(meta.Canonical),
 		Featured:    meta.Featured,
 		Published:   published,
@@ -272,13 +300,118 @@ func (p Post) URLPath() string {
 	return "/posts/" + p.Slug
 }
 
-func renderMarkdown(raw []byte) (template.HTML, error) {
+func renderMarkdown(raw []byte, contentBase string) (template.HTML, error) {
 	var out bytes.Buffer
-	if err := markdownRenderer.Convert(raw, &out); err != nil {
+
+	context := parser.NewContext()
+	context.Set(contentBaseKey, contentBase)
+	reader := text.NewReader(raw)
+	doc := markdownRenderer.Parser().Parse(reader, parser.WithContext(context))
+	if err := markdownRenderer.Renderer().Render(&out, raw, doc); err != nil {
 		return "", err
 	}
 
-	return template.HTML(out.String()), nil
+	return template.HTML(stripRenderedCalloutMarkers(out.String())), nil
+}
+
+type contentASTTransformer struct{}
+
+func (contentASTTransformer) Transform(node *ast.Document, reader text.Reader, context parser.Context) {
+	contentBase, _ := context.Get(contentBaseKey).(string)
+	source := reader.Source()
+
+	_ = ast.Walk(node, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		switch typed := node.(type) {
+		case *ast.Image:
+			typed.Destination = []byte(resolveContentAssetPath(contentBase, string(typed.Destination)))
+		case *ast.Blockquote:
+			classifyCallout(typed, source)
+		}
+
+		return ast.WalkContinue, nil
+	})
+}
+
+func classifyCallout(blockquote *ast.Blockquote, source []byte) {
+	paragraph, ok := blockquote.FirstChild().(*ast.Paragraph)
+	if !ok {
+		return
+	}
+
+	text := strings.TrimSpace(string(paragraph.Text(source)))
+	for marker, kind := range calloutMarkerKind {
+		if !strings.HasPrefix(text, marker) {
+			continue
+		}
+
+		blockquote.SetAttributeString("class", "callout callout-"+kind)
+		blockquote.SetAttributeString("data-callout", calloutKindLabel[kind])
+		return
+	}
+}
+
+func contentAssetBase(slug string) string {
+	return "/static/content/" + slug
+}
+
+func stripRenderedCalloutMarkers(value string) string {
+	for marker := range calloutMarkerKind {
+		value = strings.ReplaceAll(value, "<p>"+marker+"\n", "<p>")
+		value = strings.ReplaceAll(value, "<p>"+marker+"<br />\n", "<p>")
+		value = strings.ReplaceAll(value, "<p>"+marker+"</p>\n", "")
+	}
+	return value
+}
+
+func cleanIcon(icon, contentBase string) string {
+	icon = strings.TrimSpace(icon)
+	if !looksLikeImagePath(icon) {
+		return icon
+	}
+	return resolveContentAssetPath(contentBase, icon)
+}
+
+func looksLikeImagePath(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return false
+	}
+	if strings.HasPrefix(value, "/") || schemePattern.MatchString(value) {
+		return true
+	}
+
+	assetPath, _, _ := strings.Cut(value, "?")
+	assetPath, _, _ = strings.Cut(assetPath, "#")
+	switch strings.ToLower(urlpath.Ext(assetPath)) {
+	case ".avif", ".gif", ".ico", ".jpeg", ".jpg", ".png", ".svg", ".webp":
+		return true
+	default:
+		return false
+	}
+}
+
+func resolveContentAssetPath(contentBase, value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" || contentBase == "" || strings.HasPrefix(value, "/") || strings.HasPrefix(value, "#") || schemePattern.MatchString(value) {
+		return value
+	}
+
+	pathPart := value
+	suffix := ""
+	if index := strings.IndexAny(value, "?#"); index >= 0 {
+		pathPart = value[:index]
+		suffix = value[index:]
+	}
+
+	clean := urlpath.Clean("/" + strings.TrimPrefix(pathPart, "./"))
+	if clean == "/" {
+		return value
+	}
+	return contentBase + clean + suffix
 }
 
 func stripLeadingTitleHeading(raw []byte, title string) []byte {

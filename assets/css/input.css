@@ -95,11 +95,25 @@
   .nav {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     color: var(--muted);
     font-size: 0.94rem;
   }
 
+  .nav-link {
+    color: var(--muted);
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    color: var(--text);
+  }
+
+  .nav-link.active {
+    font-weight: 600;
+  }
+
+  .icon-button,
   .theme-toggle {
     display: inline-flex;
     align-items: center;
@@ -113,6 +127,21 @@
     background: transparent;
     color: var(--text);
     cursor: pointer;
+  }
+
+  .icon-button {
+    border-color: transparent;
+  }
+
+  .icon-button:disabled {
+    color: var(--muted);
+    cursor: default;
+    opacity: 0.82;
+  }
+
+  .icon-button svg {
+    width: 18px;
+    height: 18px;
   }
 
   .theme-toggle:hover {
@@ -198,6 +227,31 @@
     box-shadow: var(--shadow);
   }
 
+  .post-card-featured {
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  }
+
+  .post-card-body {
+    min-width: 0;
+  }
+
+  .post-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .featured-pill {
+    padding: 2px 7px;
+    border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
   .post-card h2 a,
   .prose a {
     background-image: linear-gradient(90.68deg, var(--accent) 0.26%, var(--accent-2) 102.37%);
@@ -224,6 +278,15 @@
     height: 22px;
     object-fit: cover;
     border-radius: 4px;
+  }
+
+  .post-card-cover {
+    align-self: stretch;
+    width: 150px;
+    min-height: 100px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    border-radius: 8px;
   }
 
   .post-card h2 a:hover,
@@ -280,9 +343,23 @@
     border-radius: 8px;
   }
 
+  .post-cover {
+    display: block;
+    width: 100%;
+    max-height: 320px;
+    margin: -12px auto 36px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
   .prose {
     font-size: 1rem;
     line-height: 1.7;
+  }
+
+  .prose > * + * {
+    margin-top: 1.1em;
   }
 
   .prose h1 {
@@ -306,6 +383,19 @@
     font-size: 1.25rem;
   }
 
+  .prose ul,
+  .prose ol {
+    padding-left: 1.35rem;
+  }
+
+  .prose li + li {
+    margin-top: 0.3rem;
+  }
+
+  .prose li > p {
+    margin-bottom: 0.45rem;
+  }
+
   .prose hr {
     margin: 28px 0;
     border: 0;
@@ -314,11 +404,54 @@
 
   .prose blockquote {
     margin: 28px 0;
-    padding: 4px 18px;
+    padding: 2px 18px;
     border-left: 4px solid #67bdfc;
     color: var(--muted);
-    font-size: 1.15rem;
-    font-style: italic;
+    font-size: 1.02rem;
+  }
+
+  .prose blockquote.callout {
+    position: relative;
+    padding: 16px 18px 16px 20px;
+    border: 1px solid var(--line);
+    border-left: 4px solid #67bdfc;
+    border-radius: 8px;
+    background: color-mix(in srgb, #67bdfc 7%, var(--surface));
+    color: var(--text);
+  }
+
+  .prose blockquote.callout::before {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text);
+    content: attr(data-callout);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .prose blockquote.callout p:last-child {
+    margin-bottom: 0;
+  }
+
+  .prose blockquote.callout-note {
+    border-left-color: #67bdfc;
+  }
+
+  .prose blockquote.callout-tip {
+    border-left-color: #4fb477;
+    background: color-mix(in srgb, #4fb477 7%, var(--surface));
+  }
+
+  .prose blockquote.callout-important {
+    border-left-color: #b439df;
+    background: color-mix(in srgb, #b439df 7%, var(--surface));
+  }
+
+  .prose blockquote.callout-warning,
+  .prose blockquote.callout-caution {
+    border-left-color: #d99a00;
+    background: color-mix(in srgb, #d99a00 9%, var(--surface));
   }
 
   .prose code {
@@ -332,14 +465,50 @@
     overflow-x: auto;
     padding: 20px;
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: 8px;
     background: var(--surface);
+    font-size: 0.92rem;
+    line-height: 1.65;
   }
 
   .prose pre code {
     padding: 0;
     background: transparent;
     color: inherit;
+  }
+
+  .prose table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+  }
+
+  .prose th,
+  .prose td {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .prose th {
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+    font-weight: 700;
+  }
+
+  .prose img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 28px auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  .prose input[type="checkbox"] {
+    margin-right: 0.45rem;
   }
 
   .button-link {
@@ -357,9 +526,10 @@
   }
 
   .site-footer {
-    display: flex;
-    justify-content: center;
-    gap: 18px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
     width: min(100%, 1100px);
     margin: 0 auto;
     padding: 28px 24px 40px;
@@ -367,11 +537,41 @@
     font-size: 0.92rem;
   }
 
+  .site-footer > span {
+    justify-self: start;
+  }
+
+  .footer-theme-toggle {
+    justify-self: center;
+    border-color: transparent;
+  }
+
+  .footer-socials {
+    display: flex;
+    justify-self: end;
+    gap: 16px;
+  }
+
+  .social-link {
+    display: inline-flex;
+    color: var(--text);
+  }
+
+  .social-link svg {
+    width: 28px;
+    height: 28px;
+  }
+
   @media (max-width: 680px) {
     .post-card,
-    .site-footer {
+    .post-card-meta {
       flex-direction: column;
       align-items: flex-start;
+    }
+
+    .post-card-cover {
+      width: 100%;
+      max-height: 180px;
     }
 
     .site-header {
@@ -394,6 +594,26 @@
 
     .page-shell {
       padding-top: 36px;
+    }
+
+    .site-footer {
+      grid-template-columns: 1fr auto;
+      row-gap: 18px;
+    }
+
+    .site-footer > span {
+      grid-column: 1;
+    }
+
+    .footer-theme-toggle {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-self: center;
+    }
+
+    .footer-socials {
+      grid-column: 2;
+      justify-self: end;
     }
   }
 }

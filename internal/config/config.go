@@ -29,7 +29,7 @@ func FromEnv() Site {
 	return Site{
 		Name:        "iPhantasmic's Blog",
 		Author:      "iPhantasmic",
-		Description: "A standalone Go markdown blog POC.",
+		Description: "Notes, projects, and security writing by iPhantasmic.",
 		Domain:      "iphantasmic.com",
 		BaseURL:     baseURL,
 		Addr:        addr,

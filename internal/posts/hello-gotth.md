@@ -2,6 +2,7 @@
 title: "Hello GoTTH"
 slug: "hello-gotth"
 description: "A first markdown post rendered by the standalone Go proof of concept."
+featured: true
 published: "2026-06-01"
 tags: ["go", "markdown", "poc"]
 ---
@@ -20,6 +21,7 @@ It is intentionally small, but it already proves the important loop:
 Markdown is enough for the first version because the immediate goal is a blog.
 We can still evolve the content model later if we want Notion-like blocks again.
 
+> [!NOTE]
 > The first milestone is ownership: content, rendering, and routing all live in the Go app.
 
 ## Code sample
