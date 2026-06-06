@@ -3,6 +3,7 @@ package templates
 import (
 	"iphantasmic.com/internal/config"
 	"iphantasmic.com/internal/posts"
+	"strings"
 )
 
 type Meta struct {
@@ -46,6 +47,13 @@ func NotFoundMeta(site config.Site) Meta {
 	}
 }
 
+func IsImageIcon(icon string) bool {
+	icon = strings.TrimSpace(icon)
+	return strings.HasPrefix(icon, "/") ||
+		strings.HasPrefix(icon, "http://") ||
+		strings.HasPrefix(icon, "https://")
+}
+
 templ Layout(site config.Site, meta Meta, year int) {
 	<!doctype html>
 	<html lang="en">
@@ -78,11 +86,33 @@ templ Layout(site config.Site, meta Meta, year int) {
 		</head>
 		<body>
 			<header class="site-header">
-				<a class="brand" href="/">{ site.Name }</a>
+				<a class="brand" href="/">
+					<img class="brand-icon" src="/favicon.ico" alt=""/>
+					<span>{ site.Name }</span>
+				</a>
 				<nav class="nav">
 					<a href="/">Posts</a>
 					<a href="/whoami.exe">whoami.exe</a>
-					<button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">Theme</button>
+					<button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">
+						<span class="theme-icon theme-icon-light" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="12" cy="12" r="4"></circle>
+								<path d="M12 2v2"></path>
+								<path d="M12 20v2"></path>
+								<path d="m4.93 4.93 1.41 1.41"></path>
+								<path d="m17.66 17.66 1.41 1.41"></path>
+								<path d="M2 12h2"></path>
+								<path d="M20 12h2"></path>
+								<path d="m6.34 17.66-1.41 1.41"></path>
+								<path d="m19.07 4.93-1.41 1.41"></path>
+							</svg>
+						</span>
+						<span class="theme-icon theme-icon-dark" aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M20.99 12.53A8.5 8.5 0 1 1 11.47 3.01 6.6 6.6 0 0 0 20.99 12.53Z"></path>
+							</svg>
+						</span>
+					</button>
 				</nav>
 			</header>
 			<main class="page-shell">
@@ -119,7 +149,18 @@ templ PostCard(post posts.Post) {
 	<article class="post-card">
 		<div>
 			<time datetime={ post.Published.Format("2006-01-02") }>{ post.Published.Format("January 2, 2006") }</time>
-			<h2><a href={ templ.URL("/posts/" + post.Slug) }>{ post.Title }</a></h2>
+			<h2>
+				<a href={ templ.URL("/posts/" + post.Slug) }>
+					if post.Icon != "" {
+						if IsImageIcon(post.Icon) {
+							<img class="card-icon card-icon-image" src={ templ.SafeURL(post.Icon) } alt=""/>
+						} else {
+							<span class="card-icon" aria-hidden="true">{ post.Icon }</span>
+						}
+					}
+					<span>{ post.Title }</span>
+				</a>
+			</h2>
 			<p>{ post.Description }</p>
 		</div>
 		if len(post.Tags) > 0 {
@@ -132,22 +173,42 @@ templ PostCard(post posts.Post) {
 	</article>
 }
 
+templ PageIcon(post posts.Post) {
+	if post.Icon != "" {
+		if IsImageIcon(post.Icon) {
+			<img class="page-icon page-icon-image" src={ templ.SafeURL(post.Icon) } alt=""/>
+		} else {
+			<div class="page-icon page-icon-text" aria-hidden="true">{ post.Icon }</div>
+		}
+	}
+}
+
 templ PostPage(site config.Site, year int, post posts.Post) {
 	@Layout(site, PostMeta(site, post), year) {
 		<article class="post">
-			<header class="post-header">
-				<a class="back-link" href="/">&larr; All posts</a>
-				<time datetime={ post.Published.Format("2006-01-02") }>{ post.Published.Format("January 2, 2006") }</time>
-				<h1>{ post.Title }</h1>
-				<p>{ post.Description }</p>
-				if len(post.Tags) > 0 {
-					<ul class="tags" aria-label="Tags">
-						for _, tag := range post.Tags {
-							<li>{ tag }</li>
-						}
-					</ul>
-				}
-			</header>
+			if post.Kind == "page" {
+				<header class="post-header page-header">
+					@PageIcon(post)
+					<h1>{ post.Title }</h1>
+				</header>
+			} else {
+				<header class="post-header">
+					<div class="post-meta-row">
+						<a class="back-link" href="/">&larr; All posts</a>
+						<time datetime={ post.Published.Format("2006-01-02") }>{ post.Published.Format("January 2, 2006") }</time>
+					</div>
+					@PageIcon(post)
+					<h1>{ post.Title }</h1>
+					<p>{ post.Description }</p>
+					if len(post.Tags) > 0 {
+						<ul class="tags" aria-label="Tags">
+							for _, tag := range post.Tags {
+								<li>{ tag }</li>
+							}
+						</ul>
+					}
+				</header>
+			}
 			<div class="prose">
 				@templ.Raw(post.Body)
 			</div>

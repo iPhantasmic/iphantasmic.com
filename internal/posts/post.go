@@ -24,6 +24,7 @@ type Post struct {
 	Slug        string
 	Description string
 	Kind        string
+	Icon        string
 	Published   time.Time
 	Tags        []string
 	Body        template.HTML
@@ -40,6 +41,7 @@ type frontMatter struct {
 	Slug        string   `yaml:"slug"`
 	Description string   `yaml:"description"`
 	Kind        string   `yaml:"kind"`
+	Icon        string   `yaml:"icon"`
 	Published   string   `yaml:"published"`
 	Tags        []string `yaml:"tags"`
 	Draft       bool     `yaml:"draft"`
@@ -148,6 +150,8 @@ func loadPost(path string) (Post, bool, error) {
 		return Post{}, false, fmt.Errorf("%s: published must use YYYY-MM-DD: %w", path, err)
 	}
 
+	body = stripLeadingTitleHeading(body, meta.Title)
+
 	rendered, err := renderMarkdown(body)
 	if err != nil {
 		return Post{}, false, fmt.Errorf("%s: render markdown: %w", path, err)
@@ -158,6 +162,7 @@ func loadPost(path string) (Post, bool, error) {
 		Slug:        strings.TrimSpace(meta.Slug),
 		Description: strings.TrimSpace(meta.Description),
 		Kind:        cleanKind(meta.Kind),
+		Icon:        strings.TrimSpace(meta.Icon),
 		Published:   published,
 		Tags:        cleanTags(meta.Tags),
 		Body:        rendered,
@@ -230,4 +235,36 @@ func renderMarkdown(raw []byte) (template.HTML, error) {
 	}
 
 	return template.HTML(out.String()), nil
+}
+
+func stripLeadingTitleHeading(raw []byte, title string) []byte {
+	title = normalizeHeadingText(title)
+	if title == "" {
+		return raw
+	}
+
+	body := bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))
+	body = bytes.TrimLeft(body, "\n\t ")
+	lines := bytes.SplitN(body, []byte("\n"), 2)
+	first := strings.TrimSpace(string(lines[0]))
+	if !strings.HasPrefix(first, "# ") {
+		return raw
+	}
+
+	heading := normalizeHeadingText(strings.TrimSpace(strings.TrimPrefix(first, "# ")))
+	if heading != title {
+		return raw
+	}
+
+	if len(lines) == 1 {
+		return nil
+	}
+
+	return bytes.TrimLeft(lines[1], "\n\t ")
+}
+
+func normalizeHeadingText(value string) string {
+	value = strings.TrimSpace(value)
+	value = strings.Trim(value, "*_`")
+	return strings.TrimSpace(value)
 }

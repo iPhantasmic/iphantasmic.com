@@ -11,7 +11,9 @@
   function updateButton() {
     var button = document.querySelector("[data-theme-toggle]")
     if (button) {
-      button.textContent = root.classList.contains("dark") ? "Light" : "Dark"
+      var label = root.classList.contains("dark") ? "Switch to light mode" : "Switch to dark mode"
+      button.setAttribute("aria-label", label)
+      button.setAttribute("title", label)
     }
   }
 

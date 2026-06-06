@@ -13,6 +13,7 @@ func TestLoadDirLoadsPublishedPosts(t *testing.T) {
 title: "Hello"
 slug: "hello"
 description: "A real post."
+icon: "/static/images/404.png"
 published: "2026-06-01"
 tags: ["go", "markdown", "go"]
 ---
@@ -60,6 +61,9 @@ Profile page.
 	}
 	if got := strings.Join(post.Tags, ","); got != "go,markdown" {
 		t.Fatalf("Tags = %q, want go,markdown", got)
+	}
+	if post.Icon != "/static/images/404.png" {
+		t.Fatalf("Icon = %q, want /static/images/404.png", post.Icon)
 	}
 	if !strings.Contains(string(post.Body), "<table>") {
 		t.Fatalf("Body did not render a GFM table: %s", post.Body)
