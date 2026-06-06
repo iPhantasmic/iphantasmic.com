@@ -24,6 +24,7 @@ func SiteMeta(site config.Site) Meta {
 		Canonical:   site.URL("/"),
 		ActivePath:  "/",
 		Type:        "website",
+		Image:       site.URL("/static/images/home-banner.jpeg"),
 	}
 }
 
@@ -59,6 +60,22 @@ func NotFoundMeta(site config.Site) Meta {
 		ActivePath:  "",
 		Type:        "website",
 		Image:       site.URL("/static/images/404.png"),
+	}
+}
+
+func SearchMeta(site config.Site, query string) Meta {
+	title := "Search"
+	if strings.TrimSpace(query) != "" {
+		title = "Search: " + strings.TrimSpace(query)
+	}
+
+	return Meta{
+		Title:       title,
+		Description: "Search posts and pages on " + site.Name + ".",
+		URL:         site.URL("/search"),
+		Canonical:   site.URL("/search"),
+		ActivePath:  "/search",
+		Type:        "website",
 	}
 }
 
@@ -101,6 +118,13 @@ func navLinkActive(activePath, linkPath string) bool {
 	return activePath == linkPath
 }
 
+func iconLinkClass(activePath, linkPath string) string {
+	if navLinkActive(activePath, linkPath) {
+		return "icon-button active"
+	}
+	return "icon-button"
+}
+
 func postCardClass(post posts.Post) string {
 	if post.Featured {
 		return "post-card post-card-featured"
@@ -137,6 +161,7 @@ templ Layout(site config.Site, meta Meta, year int) {
 			<meta name="twitter:title" content={ meta.Title }/>
 			<meta name="twitter:description" content={ meta.Description }/>
 			<script src="/assets/js/theme.js" defer></script>
+			<script src="/assets/js/search.js" defer></script>
 		</head>
 		<body>
 			<header class="site-header">
@@ -145,11 +170,10 @@ templ Layout(site config.Site, meta Meta, year int) {
 					<span>{ site.Name }</span>
 				</a>
 				<nav class="nav">
-					<a class={ navLinkClass(meta.ActivePath, "/") } href="/" aria-current={ navAriaCurrent(meta.ActivePath, "/") }>Posts</a>
 					<a class={ navLinkClass(meta.ActivePath, "/whoami.exe") } href="/whoami.exe" aria-current={ navAriaCurrent(meta.ActivePath, "/whoami.exe") }>whoami.exe</a>
-					<button class="icon-button search-button" type="button" aria-label="Search" title="Search" disabled>
+					<a class={ iconLinkClass(meta.ActivePath, "/search") } href="/search" aria-label="Search" title="Search" aria-current={ navAriaCurrent(meta.ActivePath, "/search") }>
 						@SearchIcon()
-					</button>
+					</a>
 					@ThemeToggle("nav-theme-toggle")
 				</nav>
 			</header>
@@ -216,11 +240,19 @@ templ LinkedInIcon() {
 
 templ Index(site config.Site, year int, list []posts.Post) {
 	@Layout(site, SiteMeta(site), year) {
-		<section class="hero">
-			<h1>Posts</h1>
-			<p>{ site.Description }</p>
+		<section class="home-profile" aria-labelledby="home-title">
+			<div class="home-cover" aria-label="Singapore flag flypast">
+				<img src="/static/images/home-banner.jpeg" alt="Helicopters carrying the Singapore flag during a flypast"/>
+			</div>
+			<div class="home-avatar" aria-hidden="true">
+				<img src="/static/images/android-chrome-192x192.png" alt=""/>
+			</div>
+			<header class="home-intro">
+				<h1 id="home-title">{ site.Name }</h1>
+			</header>
 		</section>
 		<section class="post-list" aria-label="Blog posts">
+			<h2 class="sr-only">Posts</h2>
 			for _, post := range list {
 				@PostCard(post)
 			}
@@ -264,6 +296,64 @@ templ PostCard(post posts.Post) {
 		if post.Cover != "" {
 			<img class="post-card-cover" src={ templ.SafeURL(post.Cover) } alt=""/>
 		}
+	</article>
+}
+
+templ Search(site config.Site, year int, query string, results []posts.SearchResult) {
+	@Layout(site, SearchMeta(site, query), year) {
+		<section class="search-view">
+			<header class="search-header">
+				<h1>Search</h1>
+				<form class="search-form" action="/search" method="get" role="search" data-search-form>
+					<label class="sr-only" for="site-search">Search posts and pages</label>
+					<input id="site-search" type="search" name="q" value={ query } placeholder="Search posts and pages" autocomplete="off" autofocus data-search-input/>
+					<button class="search-submit" type="submit">
+						@SearchIcon()
+						<span>Search</span>
+					</button>
+				</form>
+			</header>
+			@SearchResults(query, results)
+		</section>
+	}
+}
+
+templ SearchResults(query string, results []posts.SearchResult) {
+	<div id="search-results" class="search-results-region" aria-live="polite" aria-busy="false" data-search-results>
+		if strings.TrimSpace(query) == "" {
+			<p class="search-empty">Start typing to search posts and pages.</p>
+		} else if len(results) == 0 {
+			<p class="search-empty">No results for &ldquo;{ query }&rdquo;.</p>
+		} else {
+			<p class="search-count">{ len(results) } results for &ldquo;{ query }&rdquo;</p>
+			<section class="search-results" aria-label="Search results">
+				for _, result := range results {
+					@SearchResult(result)
+				}
+			</section>
+		}
+	</div>
+}
+
+templ SearchResult(result posts.SearchResult) {
+	<article class="search-result">
+		<div class="search-result-meta">
+			<span>{ result.Post.Kind }</span>
+			<time datetime={ result.Post.Published.Format("2006-01-02") }>{ result.Post.Published.Format("January 2, 2006") }</time>
+		</div>
+		<h2>
+			<a href={ templ.URL(result.Post.URLPath()) }>
+				if result.Post.Icon != "" {
+					if IsImageIcon(result.Post.Icon) {
+						<img class="card-icon card-icon-image" src={ templ.SafeURL(result.Post.Icon) } alt=""/>
+					} else {
+						<span class="card-icon" aria-hidden="true">{ result.Post.Icon }</span>
+					}
+				}
+				<span>{ result.Post.Title }</span>
+			</a>
+		</h2>
+		<p>{ result.Excerpt }</p>
 	</article>
 }
 

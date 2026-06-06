@@ -1,5 +1,16 @@
 /*! tailwindcss v4.3.0 | MIT License | https://tailwindcss.com */
 @layer properties;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
 .absolute {
   position: absolute;
 }
@@ -8,6 +19,9 @@
 }
 .static {
   position: static;
+}
+.container {
+  width: 100%;
 }
 .block {
   display: block;
@@ -96,14 +110,13 @@
     justify-content: space-between;
     max-width: 1100px;
     margin: 0 auto;
-    min-height: 54px;
+    min-height: 48px;
     padding: 10px 20px;
     background: var(--bg);
     @supports (color: color-mix(in lab, red, red)) {
       background: color-mix(in srgb, var(--bg) 82%, transparent);
     }
     backdrop-filter: saturate(180%) blur(16px);
-    border-bottom: 1px solid var(--line);
   }
   .brand {
     display: inline-flex;
@@ -149,6 +162,13 @@
   .icon-button {
     border-color: transparent;
   }
+  .icon-button:hover, .icon-button.active {
+    background: var(--text);
+    @supports (color: color-mix(in lab, red, red)) {
+      background: color-mix(in srgb, var(--text) 6%, transparent);
+    }
+    color: var(--text);
+  }
   .icon-button:disabled {
     color: var(--muted);
     cursor: default;
@@ -187,6 +207,65 @@
     margin: 0 auto;
     padding: 48px 24px;
   }
+  .home-profile {
+    position: relative;
+    left: 50%;
+    width: min(1200px, calc(100vw - 104px));
+    margin: -48px 0 52px;
+    text-align: center;
+    transform: translateX(-50%);
+  }
+  .home-cover {
+    position: relative;
+    width: 100%;
+    height: 296px;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #ddc7cf;
+    box-shadow: 2px 2px 8px 4px rgba(15, 15, 15, 0.1);
+  }
+  .home-cover img {
+    display: block;
+    width: 118%;
+    max-width: none;
+    height: 100%;
+    margin-left: -1%;
+    object-fit: cover;
+    object-position: center 66%;
+  }
+  .home-avatar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 124px;
+    height: 124px;
+    padding: 13px;
+    margin: -62px auto 28px;
+    overflow: hidden;
+    border: 8px solid #ffffff;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 20px 52px rgba(15, 15, 15, 0.18);
+  }
+  .home-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  .home-intro {
+    text-align: center;
+    margin: 0 auto;
+  }
+  .home-intro h1 {
+    margin-bottom: 0;
+    font-size: clamp(2.25rem, 4vw, 2.65rem);
+    line-height: 1.12;
+  }
   .hero, .post-header, .empty-state {
     text-align: center;
     margin: 0 auto 42px;
@@ -214,6 +293,112 @@
   .post-list {
     display: grid;
     gap: 22px;
+  }
+  .search-view {
+    width: min(100%, 720px);
+    margin: 0 auto;
+  }
+  .search-header {
+    margin: 0 auto 30px;
+    text-align: center;
+  }
+  .search-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 22px;
+  }
+  .search-form input {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+  }
+  .search-form input:focus {
+    border-color: var(--accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+    }
+    outline: 2px solid var(--accent);
+    @supports (color: color-mix(in lab, red, red)) {
+      outline: 2px solid color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+    outline-offset: 2px;
+  }
+  .search-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 112px;
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+  .search-submit:hover {
+    background: var(--text);
+    @supports (color: color-mix(in lab, red, red)) {
+      background: color-mix(in srgb, var(--text) 92%, var(--bg));
+    }
+  }
+  .search-submit svg {
+    width: 17px;
+    height: 17px;
+  }
+  .search-results-region {
+    min-height: 84px;
+    transition: opacity 160ms ease;
+  }
+  .search-results-region.is-loading {
+    opacity: 0.55;
+  }
+  .search-empty, .search-count {
+    color: var(--muted);
+    text-align: center;
+  }
+  .search-results {
+    display: grid;
+    gap: 14px;
+    margin-top: 22px;
+  }
+  .search-result {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .search-result-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 0.84rem;
+    text-transform: capitalize;
+  }
+  .search-result h2 {
+    margin-bottom: 8px;
+    font-size: 1.25rem;
+  }
+  .search-result h2 a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-result p {
+    margin-bottom: 0;
+    color: var(--muted);
   }
   .post-card {
     display: flex;
@@ -529,6 +714,25 @@
     width: 28px;
     height: 28px;
   }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  @media (max-width: 1200px) {
+    .home-profile {
+      width: 100vw;
+    }
+    .home-cover {
+      border-radius: 0;
+    }
+  }
   @media (max-width: 680px) {
     .post-card, .post-card-meta {
       flex-direction: column;
@@ -553,8 +757,32 @@
       gap: 10px;
       font-size: 0.88rem;
     }
+    .search-form {
+      flex-direction: column;
+    }
+    .search-submit {
+      width: 100%;
+    }
     .page-shell {
       padding-top: 36px;
+    }
+    .home-profile {
+      margin-top: -36px;
+      margin-bottom: 40px;
+    }
+    .home-cover {
+      height: 220px;
+    }
+    .home-avatar {
+      width: 108px;
+      height: 108px;
+      padding: 12px;
+      margin-top: -54px;
+      margin-bottom: 24px;
+      border-width: 7px;
+    }
+    .home-intro h1 {
+      font-size: 2.15rem;
     }
     .site-footer {
       grid-template-columns: 1fr auto;

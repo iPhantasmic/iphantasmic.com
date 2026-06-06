@@ -126,6 +126,28 @@ Profile page.
 	if got := len(store.SitemapPages()); got != 3 {
 		t.Fatalf("len(SitemapPages()) = %d, want 3", got)
 	}
+
+	results := store.Search("relative media", 10)
+	if len(results) == 0 {
+		t.Fatal("Search(relative media) returned no results")
+	}
+	if results[0].Post.Slug != "hello" {
+		t.Fatalf("Search(relative media)[0].Slug = %q, want hello", results[0].Post.Slug)
+	}
+	if !strings.Contains(results[0].Excerpt, "Relative media should resolve") {
+		t.Fatalf("Search(relative media)[0].Excerpt = %q, want body excerpt", results[0].Excerpt)
+	}
+
+	results = store.Search("profile", 10)
+	if len(results) == 0 || results[0].Post.Kind != "page" {
+		t.Fatalf("Search(profile)[0] = %+v, want page result", results)
+	}
+	if got := store.Search("relative media", 1); len(got) != 1 {
+		t.Fatalf("len(Search(relative media, 1)) = %d, want 1", len(got))
+	}
+	if got := store.Search("not-in-the-index", 10); len(got) != 0 {
+		t.Fatalf("len(Search(not-in-the-index)) = %d, want 0", len(got))
+	}
 }
 
 func TestLoadDirValidatesUpdatedDate(t *testing.T) {

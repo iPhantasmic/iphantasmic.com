@@ -34,6 +34,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/feed.xml", s.feed)
 	mux.HandleFunc("/sitemap.xml", s.sitemap)
 	mux.HandleFunc("/robots.txt", s.robots)
+	mux.HandleFunc("/search", s.search)
 	mux.HandleFunc("/posts/", s.post)
 	mux.HandleFunc("/", s.root)
 	return mux
@@ -69,6 +70,22 @@ func (s *Server) post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.render(w, r, http.StatusOK, templates.PostPage(s.site, time.Now().Year(), post))
+}
+
+func (s *Server) search(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	results := s.posts.Search(query, 20)
+	if r.URL.Query().Get("partial") == "1" {
+		s.render(w, r, http.StatusOK, templates.SearchResults(query, results))
+		return
+	}
+
+	s.render(w, r, http.StatusOK, templates.Search(s.site, time.Now().Year(), query, results))
 }
 
 func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {

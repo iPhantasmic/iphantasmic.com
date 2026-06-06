@@ -36,12 +36,19 @@ type Post struct {
 	Updated     time.Time
 	Tags        []string
 	Body        template.HTML
+	searchText  string
 }
 
 type Store struct {
 	posts  []Post
 	pages  []Post
 	bySlug map[string]Post
+}
+
+type SearchResult struct {
+	Post    Post
+	Excerpt string
+	Score   int
 }
 
 type frontMatter struct {
@@ -156,6 +163,43 @@ func (s *Store) SitemapPages() []Post {
 	return items
 }
 
+func (s *Store) Search(query string, limit int) []SearchResult {
+	terms := searchTerms(query)
+	if len(terms) == 0 {
+		return nil
+	}
+
+	items := s.SitemapPages()
+	results := make([]SearchResult, 0, len(items))
+	for _, post := range items {
+		score := post.searchScore(terms, query)
+		if score == 0 {
+			continue
+		}
+
+		results = append(results, SearchResult{
+			Post:    post,
+			Excerpt: excerpt(post.searchText, terms),
+			Score:   score,
+		})
+	}
+
+	sort.SliceStable(results, func(i, j int) bool {
+		if results[i].Score != results[j].Score {
+			return results[i].Score > results[j].Score
+		}
+		if results[i].Post.Featured != results[j].Post.Featured {
+			return results[i].Post.Featured
+		}
+		return results[i].Post.Published.After(results[j].Post.Published)
+	})
+
+	if limit > 0 && len(results) > limit {
+		return results[:limit]
+	}
+	return results
+}
+
 func loadPost(path string) (Post, bool, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -192,6 +236,7 @@ func loadPost(path string) (Post, bool, error) {
 	}
 
 	body = stripLeadingTitleHeading(body, meta.Title)
+	searchText := plainMarkdownText(body)
 
 	rendered, err := renderMarkdown(body, contentBase)
 	if err != nil {
@@ -211,6 +256,7 @@ func loadPost(path string) (Post, bool, error) {
 		Updated:     updated,
 		Tags:        cleanTags(meta.Tags),
 		Body:        rendered,
+		searchText:  searchText,
 	}, true, nil
 }
 
@@ -300,6 +346,44 @@ func (p Post) URLPath() string {
 	return "/posts/" + p.Slug
 }
 
+func (p Post) searchScore(terms []string, query string) int {
+	title := strings.ToLower(p.Title)
+	description := strings.ToLower(p.Description)
+	slug := strings.ToLower(p.Slug)
+	body := strings.ToLower(p.searchText)
+	tags := strings.ToLower(strings.Join(p.Tags, " "))
+	exact := strings.ToLower(strings.TrimSpace(query))
+
+	score := 0
+	if exact != "" {
+		score += weightedContains(title, exact, 90)
+		score += weightedContains(tags, exact, 70)
+		score += weightedContains(description, exact, 45)
+		score += weightedContains(slug, exact, 35)
+		score += weightedContains(body, exact, 20)
+	}
+
+	for _, term := range terms {
+		score += weightedContains(title, term, 45)
+		score += weightedContains(tags, term, 34)
+		score += weightedContains(description, term, 22)
+		score += weightedContains(slug, term, 16)
+		score += weightedContains(body, term, 8)
+	}
+
+	if p.Featured && score > 0 {
+		score += 3
+	}
+	return score
+}
+
+func weightedContains(value, term string, weight int) int {
+	if value == "" || term == "" || !strings.Contains(value, term) {
+		return 0
+	}
+	return weight
+}
+
 func renderMarkdown(raw []byte, contentBase string) (template.HTML, error) {
 	var out bytes.Buffer
 
@@ -312,6 +396,95 @@ func renderMarkdown(raw []byte, contentBase string) (template.HTML, error) {
 	}
 
 	return template.HTML(stripRenderedCalloutMarkers(out.String())), nil
+}
+
+func plainMarkdownText(raw []byte) string {
+	context := parser.NewContext()
+	reader := text.NewReader(raw)
+	doc := markdownRenderer.Parser().Parse(reader, parser.WithContext(context))
+
+	var parts []string
+	_ = ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		switch typed := node.(type) {
+		case *ast.Text:
+			parts = append(parts, string(typed.Value(raw)))
+		case *ast.String:
+			parts = append(parts, string(typed.Value))
+		case *ast.CodeBlock:
+			parts = append(parts, string(typed.Text(raw)))
+		case *ast.FencedCodeBlock:
+			parts = append(parts, string(typed.Text(raw)))
+		}
+		return ast.WalkContinue, nil
+	})
+
+	return cleanSearchText(strings.Join(parts, " "))
+}
+
+func searchTerms(query string) []string {
+	fields := strings.Fields(strings.ToLower(query))
+	if len(fields) == 0 {
+		return nil
+	}
+
+	terms := make([]string, 0, len(fields))
+	seen := map[string]bool{}
+	for _, field := range fields {
+		field = strings.Trim(field, " \t\r\n.,;:!?()[]{}\"'`")
+		if field == "" || seen[field] {
+			continue
+		}
+		seen[field] = true
+		terms = append(terms, field)
+	}
+	return terms
+}
+
+func cleanSearchText(value string) string {
+	for marker := range calloutMarkerKind {
+		value = strings.ReplaceAll(value, marker, " ")
+	}
+	return strings.Join(strings.Fields(value), " ")
+}
+
+func excerpt(value string, terms []string) string {
+	const maxRunes = 180
+
+	value = cleanSearchText(value)
+	if value == "" {
+		return ""
+	}
+
+	lower := strings.ToLower(value)
+	start := 0
+	for _, term := range terms {
+		if index := strings.Index(lower, term); index >= 0 {
+			start = index - 52
+			if start < 0 {
+				start = 0
+			}
+			break
+		}
+	}
+
+	prefix := ""
+	if start > 0 {
+		if nextSpace := strings.IndexByte(value[start:], ' '); nextSpace >= 0 {
+			start += nextSpace + 1
+		}
+		prefix = "..."
+	}
+
+	runes := []rune(value[start:])
+	if len(runes) <= maxRunes {
+		return prefix + string(runes)
+	}
+
+	return prefix + string(runes[:maxRunes]) + "..."
 }
 
 type contentASTTransformer struct{}

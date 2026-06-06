@@ -143,6 +143,17 @@ Callouts use GitHub-style blockquote markers:
 
 - `/posts/hello-gotth`
 - `/whoami.exe`
+- `/search`
 
 The `whoami.exe` page is backed by [`internal/posts/whoami.exe.md`](./internal/posts/whoami.exe.md).
 Any markdown file with `kind: "page"` follows the same routing rule automatically.
+
+## Search
+
+`/search?q=term` searches published posts and pages in-memory. The index uses title,
+slug, description, tags, and markdown body text, with title/tag matches weighted
+higher than body matches.
+
+The search page progressively enhances to live results with `assets/js/search.js`.
+Without JavaScript, the same form falls back to normal `GET /search?q=term`
+submissions. `partial=1` returns only the results fragment for the live update path.
