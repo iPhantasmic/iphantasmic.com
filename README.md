@@ -2,9 +2,6 @@
 
 Standalone GoTTH markdown blog for `iphantasmic.com`.
 
-The former Next.js + Notion implementation is parked in [`legacy-next/`](./legacy-next)
-for reference while this rewrite takes over the root project.
-
 ## Stack
 
 - Go

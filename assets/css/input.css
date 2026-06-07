@@ -10,8 +10,8 @@
     --text: #24211d;
     --muted: #706b64;
     --line: rgba(36, 33, 29, 0.12);
-    --accent: #b439df;
-    --accent-2: #e5337e;
+    --accent: #ff7a00;
+    --accent-2: #d99a00;
     --shadow: 0 18px 60px rgba(15, 15, 15, 0.08);
   }
 
@@ -791,8 +791,8 @@
   }
 
   .prose blockquote.callout-important {
-    border-left-color: #b439df;
-    background: color-mix(in srgb, #b439df 7%, var(--surface));
+    border-left-color: #ff7a00;
+    background: color-mix(in srgb, #ff7a00 8%, var(--surface));
   }
 
   .prose blockquote.callout-warning,
@@ -805,7 +805,7 @@
     padding: 0.18em 0.38em;
     border-radius: 6px;
     background: color-mix(in srgb, var(--text) 9%, transparent);
-    color: #e5337e;
+    color: #ff7a00;
   }
 
   .prose pre {
