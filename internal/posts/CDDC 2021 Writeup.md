@@ -384,7 +384,7 @@ Members of TheKeepers got their hands on one of the GDC computers. They created 
 
 Hint #1: What was that profile again?
 
-[data](/static/content/cddc-2021/data%201.txt)
+**Challenge File: data1.txt**
 
 ```bash
 volatility -f data imageinfo
