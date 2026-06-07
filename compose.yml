@@ -1,6 +1,5 @@
 services:
   iphantasmic-com:
-    container_name: iphantasmic-com
     build:
       context: .
       dockerfile: Dockerfile

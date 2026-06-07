@@ -13,7 +13,7 @@ COPY assets/js ./assets/js
 COPY internal ./internal
 RUN npm run css
 
-FROM golang:1.26-alpine3.21 AS builder
+FROM golang:1.26-alpine3.22 AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY --from=assets /app/assets/css/app.css ./assets/css/app.css
 RUN templ generate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server ./cmd
 
-FROM alpine:3.21
+FROM alpine:3.22
 
 WORKDIR /app
 
