@@ -1,0 +1,7 @@
+backup:x:34:34:backup:/var/backups:/bin/sh
+bin:x:2:2:bin:/bin:/bin/sh
+daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+root:x:0:0:root:/root:/bin/bash
+service:x:1002:1002:,,,:/home/service:/bin/bash
+sys:x:3:3:sys:/dev:/bin/sh
+user:x:1001:1001:just a user,111,,:/home/user:/bin/bash

@@ -1,0 +1,7 @@
+backup:$1$AW3PeKjo$6X6LFreZoSWnuK8YMSaYU1:14684:0:99999:7:::
+bin:$1$uaXtYDCA$UuZ6hrSCcTYGUqXGrRyqf/:14684:0:99999:7:::
+daemon:$1$iAJ/Oj7a$QfzzGrDS3zCmvZjjnYb4q0:14684:0:99999:7:::
+root:$1$VFX2fSJL$qOtnkgZY1.JwTYHXwJbAO0:14747:0:99999:7:::
+service:$1$kR3ue7JZ$7GxELDupr5Ohp6cjZ3Bu//:14715:0:99999:7:::
+sys:$1$fUX6BPOt$Miyc3UpOzQJqz4s5wFD9l0:14742:0:99999:7:::
+user:$1$HESu9xrH$k.o3G93DGoXIiQKkPmUgZ0:14699:0:99999:7:::

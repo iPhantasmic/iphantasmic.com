@@ -2,7 +2,7 @@
 title: "Whitehats Social Night 2020 Writeup"
 slug: "whitehats-social-night-2020"
 description: "Writeup for Whitehats Social Night 2020 mini-CTF"
-cover: "/static/content/whitehats-social-night-2020-writeup/cover.png"
+cover: "/static/content/whitehats-social-night-2020/cover.png"
 featured: false
 published: "2020-12-08"
 tags: ["CTF", "writeup"]
@@ -26,7 +26,7 @@ We are given a prompt that resembles a flag, but we know nothing of how to get i
 
 Going over to [CyberChef](https://gchq.github.io/CyberChef/), my favourite tool for dealing with conversions and encodings, we throw in ROT13 and the given prompt. As ROT13 is fairly simple, we can just bruteforce the key which gives us the flag:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag.png)
 
 ```
 wh{salad_is_also_good}
@@ -42,7 +42,7 @@ Prompt: 77 68 61 62 63 5f 74 6f 5f 68 33 78
 
 This is fairly straightforward, just convert hex to ASCII to view the flag. Plenty of tools online but I used [this](https://www.rapidtables.com/convert/number/hex-to-ascii.html):
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%201.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%201.png)
 
 ```
 wh{abc_to_h3x}
@@ -60,7 +60,7 @@ Prompt: "This document seems corrupted, I guess we should delete it."
 
 File provided: "documents.doc"
 
-[documents.doc](/static/content/whitehats-social-night-2020-writeup/documents.doc)
+[documents.doc](/static/content/whitehats-social-night-2020/documents.doc)
 
 ### My Attempt
 
@@ -68,7 +68,7 @@ Well please don't actually believe them, deleting the file will not give you the
 
 Opening the file in Microsoft Word would give us an error. Peering into the file using Word, we see the PNG file signature at the top.
 
-![word.png](/static/content/whitehats-social-night-2020-writeup/word.png)
+![word.png](/static/content/whitehats-social-night-2020/word.png)
 
 When a file is "corrupted" it is also a possibility where the data is not understood by the application designated to open files with that file extension. To further confirm this, we can run this in terminal:
 
@@ -76,11 +76,11 @@ When a file is "corrupted" it is also a possibility where the data is not unders
 file documents.doc
 ```
 
-![file.png](/static/content/whitehats-social-night-2020-writeup/file.png)
+![file.png](/static/content/whitehats-social-night-2020/file.png)
 
 Now, renaming the file as documents.png instead, opening the image, we get the flag:
 
-![documents.png](/static/content/whitehats-social-night-2020-writeup/documents.png)
+![documents.png](/static/content/whitehats-social-night-2020/documents.png)
 
 ```
 wh{4lway5_h4s_b3en}
@@ -94,7 +94,7 @@ Presented with a question: "Data is just 0 and 1 right?"
 
 File provided: "okay.png"
 
-![okay.png](/static/content/whitehats-social-night-2020-writeup/okay.png)
+![okay.png](/static/content/whitehats-social-night-2020/okay.png)
 
 ### My Attempt
 
@@ -106,7 +106,7 @@ However, data is represented to us through certain character-encodings, the fast
 cat okay.png
 ```
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%202.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%202.png)
 
 We are then presented with the flag at the end of the file:
 
@@ -122,7 +122,7 @@ Prompt: "Who made this?"
 
 File provided: "y_tho.jpg"
 
-![y_tho.jpg](/static/content/whitehats-social-night-2020-writeup/y_tho.jpg)
+![y_tho.jpg](/static/content/whitehats-social-night-2020/y_tho.jpg)
 
 ### My Attempt
 
@@ -130,7 +130,7 @@ Looking at the challenge name, we can guess that it might have something to do w
 
 There is an abundance of EXIF viewing tools, but I chose an online option [exifdata.com](https://exifdata.com)
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%203.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%203.png)
 
 ```
 wh{but_real1y_y_th0}
@@ -144,7 +144,7 @@ Prompt: "Something seems fishy about this music..."
 
 File provided: "megalovania.mp3"
 
-[megalovania.mp3](/static/content/whitehats-social-night-2020-writeup/megalovania.mp3)
+[megalovania.mp3](/static/content/whitehats-social-night-2020/megalovania.mp3)
 
 ### My Attempt
 
@@ -160,7 +160,7 @@ binwalk megalovania.mp3
 
 So here, we see that there is an embedded JPEG image within the *.mp3
 
-![results.png](/static/content/whitehats-social-night-2020-writeup/results.png)
+![results.png](/static/content/whitehats-social-night-2020/results.png)
 
 We will now use binwalk to extract it as well. Using this command, I could extract all the contents of the file:
 
@@ -168,11 +168,11 @@ We will now use binwalk to extract it as well. Using this command, I could extra
 binwalk --dd='.*' megalovania.mp3
 ```
 
-![extracted.png](/static/content/whitehats-social-night-2020-writeup/extracted.png)
+![extracted.png](/static/content/whitehats-social-night-2020/extracted.png)
 
-Inside the folder "_megalovania.mp3.extracted", we would then see a file titled "[27CAD](/static/content/whitehats-social-night-2020-writeup/27CAD.jpg)". Knowing that they are JPEG files, we just needed to add the extension and open them which displayed the flag:
+Inside the folder "_megalovania.mp3.extracted", we would then see a file titled "[27CAD](/static/content/whitehats-social-night-2020/27CAD.jpg)". Knowing that they are JPEG files, we just needed to add the extension and open them which displayed the flag:
 
-![27CAD.jpg](/static/content/whitehats-social-night-2020-writeup/27CAD.jpg)
+![27CAD.jpg](/static/content/whitehats-social-night-2020/27CAD.jpg)
 
 ```
 wh{wh4t}
@@ -188,7 +188,7 @@ i wonder what's hidden..."
 
 File provided: "gavinsteg.jpg"
 
-![gavinsteg.jpg](/static/content/whitehats-social-night-2020-writeup/gavinsteg.jpg)
+![gavinsteg.jpg](/static/content/whitehats-social-night-2020/gavinsteg.jpg)
 
 ### My Attempt
 
@@ -198,23 +198,23 @@ However, I remembered that steghide could store data in a file within a file. It
 
 First, I uploaded gavinsteg.jpg and chose to view the file in plaintext to see if anything looked recognisable.
 
-![raw.png](/static/content/whitehats-social-night-2020-writeup/raw.png)
+![raw.png](/static/content/whitehats-social-night-2020/raw.png)
 
 Interestingly we see "JFIF", more on that [here](https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format). So we know that this is a file, now we save it then.
 
-![jfif.png](/static/content/whitehats-social-night-2020-writeup/jfif.png)
+![jfif.png](/static/content/whitehats-social-night-2020/jfif.png)
 
-Using the "Prompt to save", I downloaded the file and renamed it [out.jfif](/static/content/whitehats-social-night-2020-writeup/out.jfif) For those on Windows, you would probably be able to open this in Paint.
+Using the "Prompt to save", I downloaded the file and renamed it [out.jfif](/static/content/whitehats-social-night-2020/out.jfif) For those on Windows, you would probably be able to open this in Paint.
 
-[out.jfif](/static/content/whitehats-social-night-2020-writeup/out.jfif)
+[out.jfif](/static/content/whitehats-social-night-2020/out.jfif)
 
 As a Mac user, I had no readily available option, so I converted it to out.jpg to take a look.
 
-![out.jpg](/static/content/whitehats-social-night-2020-writeup/out.jpg)
+![out.jpg](/static/content/whitehats-social-night-2020/out.jpg)
 
 Now I was stumped, where do I go from here? If in doubt, throw it into steghide again! Seeing as the conversion from *.jfif to *.jpg might have removed any meaningful data, I did not get any flag from using out.jpg in steghide. Instead, throwing in out.jfif, we get the flag in plaintext:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%204.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%204.png)
 
 ```
 wh{wh4t_ev3n}
@@ -232,7 +232,7 @@ Prompt: "We stole a password from someone, but it’s hashed! How will we solve 
 
 Files provided: "passwords.txt"
 
-[passwords.txt](/static/content/whitehats-social-night-2020-writeup/passwords.txt)
+[passwords.txt](/static/content/whitehats-social-night-2020/passwords.txt)
 
 ### My Attempt
 
@@ -240,7 +240,7 @@ Opening up passwords.txt, we see what looks to be the hash for a password. Insti
 
 Putting the hash in, we managed to get a plaintext result with sha256 as the hashing algorithm:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%205.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%205.png)
 
 ```
 wh{saf3}
@@ -266,11 +266,11 @@ nmap -p 1-10000 www.whitehats.space
 
 We use 1-10000 to increase the scan range from the default well known ports. Note that there is a likelihood the port number may be larger than 10000, but I was lucky here. More on type of ports [here](https://en.wikipedia.org/wiki/Registered_port).
 
-![result.png](/static/content/whitehats-social-night-2020-writeup/result.png)
+![result.png](/static/content/whitehats-social-night-2020/result.png)
 
 From the result, we already see a suspicious port 22 (from a sysadmin perspective, this should not be open to the Internet) and an unknown port 1324. Attempting to connect to them using nc (netcat), we don't get much success from port 22, but obtain the flag from port 1324:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%206.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%206.png)
 
 ```
 wh{sc4n_m3_l0t5}
@@ -286,7 +286,7 @@ Prompt: "There must be records stored somewhere."
 
 The word records would remind you of the DNS records that contain information of registered URLs. To act on this information, I used a DNS lookup tool online, link [here](https://dnschecker.org/all-dns-records-of-domain.php).
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%207.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%207.png)
 
 ```
 wh{i_th0ught_th1s_w4s_s4f3}
@@ -306,11 +306,11 @@ Prompt: "We've found someone interesting, but we only have their name... Who is�
 
 Doing a Google search of **Iqrah Markham twitter** (twitter as derived from tweet), we are presented with the following that is not of much use:
 
-![attempt.png](/static/content/whitehats-social-night-2020-writeup/attempt.png)
+![attempt.png](/static/content/whitehats-social-night-2020/attempt.png)
 
 Tweaking the search to necessitate the inclusion of Iqrah Markham in the results, we now try with **"Iqrah Markham" twitter**:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%208.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%208.png)
 
 ```
 wh{y0u_f0und_m3}
@@ -330,11 +330,11 @@ In continuation of **tweet!**, let's stalk Iqrah Markham more!
 
 Taking a look at Iqrah's Followers, we see 3 accounts:
 
-![follower.png](/static/content/whitehats-social-night-2020-writeup/follower.png)
+![follower.png](/static/content/whitehats-social-night-2020/follower.png)
 
 Opening them all up, we would then find the flag in [Sanaa Robert](https://twitter.com/RobertsSanaa)'s acount:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%209.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%209.png)
 
 ```
 wh{i_c4nt_g3t_0ut_of_b3d}
@@ -352,15 +352,15 @@ Hmm... Iqrah doesn't have much left for us to stalk.. Let's stalk Sanaa Roberts 
 
 Opening up the Followings, we see a new friend, [Imaani Manni](https://twitter.com/imaani_manni):
 
-![friend.png](/static/content/whitehats-social-night-2020-writeup/friend.png)
+![friend.png](/static/content/whitehats-social-night-2020/friend.png)
 
 Opening the profile, we see a tweet with a [link](https://meetwhen.io/EquatorialUnconsciousMandrill):
 
-![money.png](/static/content/whitehats-social-night-2020-writeup/money.png)
+![money.png](/static/content/whitehats-social-night-2020/money.png)
 
 Opening the link, we get the flag:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%2010.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%2010.png)
 
 ```
 wh{n0t_priv4t3}
@@ -378,15 +378,15 @@ One of the more interesting challenges, we first head over to the [Instagram pa
 
 There was only one post at the time, which had what looked to be Morse Code as the borders of the image as well as a tip to **look deep into the instructions**.
 
-![post.png](/static/content/whitehats-social-night-2020-writeup/post.png)
+![post.png](/static/content/whitehats-social-night-2020/post.png)
 
 Pulling up a [Morse Code decoder](https://morsecode.world/international/translator.html), this was what I got:
 
-![morse.png](/static/content/whitehats-social-night-2020-writeup/morse.png)
+![morse.png](/static/content/whitehats-social-night-2020/morse.png)
 
 Now using the hint, and following Whitehats, I received a DM and some instructions and obtained the flag:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%2011.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%2011.png)
 
 ```
 wh{d0nt_unf0llow_u5}
@@ -408,7 +408,7 @@ Going to the [homepage](http://www.whitehats.space/) of the CTF page, we now u
 
 Expanding several elements, we can already see the flag in plain sight:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%2012.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%2012.png)
 
 ```
 wh{hidd3n_in_pl4in_sight}
@@ -426,7 +426,7 @@ In any language, comments are crucial part of documentation, this applies for HT
 
 Inspecting the [homepage](http://www.whitehats.space/) once again, we must look harder now.. Or maybe we just look smarter, let's search for the flag. Using 'wh' as the search input, we find find the flag as a comment, hidden in the HTML:
 
-![flag.png](/static/content/whitehats-social-night-2020-writeup/flag%2013.png)
+![flag.png](/static/content/whitehats-social-night-2020/flag%2013.png)
 
 ```
 wh{d3v_is_fun}
