@@ -10,6 +10,18 @@ tags: ["CTF", "writeup"]
 
 # STACK the Flags 2020 Writeup
 
+4th December 2020 2100 - 6th December 2020 2245
+
+This was the first official CTF that I competed in, and marks the start of a new venture into practical cybersecurity skills through gamification. Having had a good foundation in cybersecurity, the transition to CTFs was still fairly awkward, given the varied application of relevant skills. 
+
+I found myself humbled by this experience, and at times, handicapped by the categories that were foreign to me. Big shoutout to SMU's Whitehats Society for the preparation prior to the CTF, giving us a glimpse into Binary Exploitation, Reverse Engineering and Web attacks.
+
+During this CTF, I attempted the Forensics, OSINT and Misc. challenges. Although I didn't find much success with the memory analysis challenge, I felt that it was already an achievement to be able to complete majority of the OSINT and Misc. challenges. Initially the team was at full capacity (4 members), but due to academic commitments, we were reduced to 2. This definitely made it harder for us moving into the last 12 hours of the CTF where fatigue and the lack in diversity of skills meant that we were essentially stagnating. Nonetheless, it was an honour to have been able to place 72nd in our category of about 200 active teams. 
+
+Moving forward, I hope to explore some Mobile as well as Binary Exploitation challenges. These will be the categories that I'll be reading up and practising on, shifting my focus here in hopes of diversifying my skillsets. GLHF!
+
+iPhantasmic
+
 ---
 
 # Forensics
